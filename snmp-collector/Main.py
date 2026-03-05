@@ -1,0 +1,1 @@
+print("SNMP Collector ready")
