@@ -1,7 +1,6 @@
 from fastapi import FastAPI
-
 app = FastAPI()
 
 @app.get("/")
-def home():
-    return {"message": "Web Platform ready"}
+def read_root():
+    return {"status": "Plateforme de Monitoring Nouvameq"}
