@@ -1,1 +1,5 @@
-pysnmp
+pysnmp==4.4.12
+pyasn1==0.4.8
+pysmi==0.3.4
+pandas
+numpy
