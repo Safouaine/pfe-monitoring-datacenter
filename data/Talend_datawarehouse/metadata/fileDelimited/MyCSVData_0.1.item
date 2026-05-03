@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xmi:XMI xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:TalendMetadata="http://www.talend.org/metadata/connection/2010" xmlns:orgomg.cwm.resource.record="http:///orgomg/cwm/resource/record.ecore">
+  <TalendMetadata:DelimitedFileConnection xmi:id="_myaM8D18EfGWdKtSHA3USg" name="MyCSVData" id="_myY-0D18EfGWdKtSHA3USg" dataPackage="_myaM8T18EfGWdKtSHA3USg" Server="Localhost 127.0.0.1" FilePath="C:/Users/eyas2/pfe-monitoring-datacenter/data/datacenter_tunisia_20K_fixed.csv" Encoding="US-ASCII" FieldSeparatorValue="&quot;,&quot;" RowSeparatorValue="&quot;\n&quot;" UseHeader="true" HeaderValue="1" FooterValue="0" LimitValue="" FirstLineCaption="true" RemoveEmptyRow="true" EscapeChar="&quot;\&quot;&quot;" TextEnclosure="&quot;\&quot;&quot;" FieldSeparatorType="Comma"/>
+  <orgomg.cwm.resource.record:RecordFile xmi:id="_myaM8T18EfGWdKtSHA3USg" name="default" dataManager="_myaM8D18EfGWdKtSHA3USg">
+    <ownedElement xsi:type="TalendMetadata:MetadataTable" xmi:id="_myaM8j18EfGWdKtSHA3USg" id="_yQlV4D17EfGWdKtSHA3USg" label="metadata">
+      <feature xsi:type="TalendMetadata:MetadataColumn" xmi:id="_SviPMD8WEfGWdKtSHA3USg" label="timestamp" length="7" talendType="id_String" pattern="&quot;dd-MM-yyyy&quot;"/>
+      <feature xsi:type="TalendMetadata:MetadataColumn" xmi:id="_SviPMT8WEfGWdKtSHA3USg" label="temp_ext" length="5" precision="3" talendType="id_Float" pattern="&quot;dd-MM-yyyy&quot;"/>
+      <feature xsi:type="TalendMetadata:MetadataColumn" xmi:id="_SviPMj8WEfGWdKtSHA3USg" label="humidity" length="5" precision="3" talendType="id_Float" pattern="&quot;dd-MM-yyyy&quot;"/>
+      <feature xsi:type="TalendMetadata:MetadataColumn" xmi:id="_SviPMz8WEfGWdKtSHA3USg" label="rack1_h" length="5" precision="3" talendType="id_Float" pattern="&quot;dd-MM-yyyy&quot;"/>
+      <feature xsi:type="TalendMetadata:MetadataColumn" xmi:id="_SviPND8WEfGWdKtSHA3USg" label="rack1_m" length="5" precision="3" talendType="id_Float" pattern="&quot;dd-MM-yyyy&quot;"/>
+      <feature xsi:type="TalendMetadata:MetadataColumn" xmi:id="_SviPNT8WEfGWdKtSHA3USg" label="rack1_b" length="5" precision="3" talendType="id_Float" pattern="&quot;dd-MM-yyyy&quot;"/>
+      <feature xsi:type="TalendMetadata:MetadataColumn" xmi:id="_SviPNj8WEfGWdKtSHA3USg" label="rack2_h" length="5" precision="3" talendType="id_Float" pattern="&quot;dd-MM-yyyy&quot;"/>
+      <feature xsi:type="TalendMetadata:MetadataColumn" xmi:id="_SviPNz8WEfGWdKtSHA3USg" label="rack2_m" length="5" precision="3" talendType="id_Float" pattern="&quot;dd-MM-yyyy&quot;"/>
+      <feature xsi:type="TalendMetadata:MetadataColumn" xmi:id="_SviPOD8WEfGWdKtSHA3USg" label="rack2_b" length="5" precision="3" talendType="id_Float" pattern="&quot;dd-MM-yyyy&quot;"/>
+      <feature xsi:type="TalendMetadata:MetadataColumn" xmi:id="_SviPOT8WEfGWdKtSHA3USg" label="pwr_consumption" length="5" precision="3" talendType="id_Float" pattern="&quot;dd-MM-yyyy&quot;"/>
+      <feature xsi:type="TalendMetadata:MetadataColumn" xmi:id="_SviPOj8WEfGWdKtSHA3USg" label="fuel_level" length="5" precision="3" talendType="id_Float" pattern="&quot;dd-MM-yyyy&quot;"/>
+      <feature xsi:type="TalendMetadata:MetadataColumn" xmi:id="_SviPOz8WEfGWdKtSHA3USg" label="battery_health" length="5" precision="3" talendType="id_Float" pattern="&quot;dd-MM-yyyy&quot;"/>
+      <feature xsi:type="TalendMetadata:MetadataColumn" xmi:id="_SviPPD8WEfGWdKtSHA3USg" label="pwr_source" length="1" talendType="id_Integer" pattern="&quot;dd-MM-yyyy&quot;"/>
+      <feature xsi:type="TalendMetadata:MetadataColumn" xmi:id="_SviPPT8WEfGWdKtSHA3USg" label="ac_status" length="1" talendType="id_Integer" pattern="&quot;dd-MM-yyyy&quot;"/>
+      <feature xsi:type="TalendMetadata:MetadataColumn" xmi:id="_SviPPj8WEfGWdKtSHA3USg" label="door_open" length="1" talendType="id_Integer" pattern="&quot;dd-MM-yyyy&quot;"/>
+      <feature xsi:type="TalendMetadata:MetadataColumn" xmi:id="_SviPPz8WEfGWdKtSHA3USg" label="smoke_detected" length="1" talendType="id_Integer" pattern="&quot;dd-MM-yyyy&quot;"/>
+      <feature xsi:type="TalendMetadata:MetadataColumn" xmi:id="_SviPQD8WEfGWdKtSHA3USg" label="water_leak" length="1" talendType="id_Integer" pattern="&quot;dd-MM-yyyy&quot;"/>
+      <feature xsi:type="TalendMetadata:MetadataColumn" xmi:id="_SviPQT8WEfGWdKtSHA3USg" label="cyber_alert" length="1" talendType="id_Integer" pattern="&quot;dd-MM-yyyy&quot;"/>
+      <feature xsi:type="TalendMetadata:MetadataColumn" xmi:id="_SviPQj8WEfGWdKtSHA3USg" label="target" length="1" talendType="id_Integer" pattern="&quot;dd-MM-yyyy&quot;"/>
+    </ownedElement>
+  </orgomg.cwm.resource.record:RecordFile>
+</xmi:XMI>

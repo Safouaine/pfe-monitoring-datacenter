@@ -1,0 +1,30 @@
+<?xml version="1.1" encoding="UTF-8"?>
+<expression:EMFExpression xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:expression="http:///expression.ecore" id="tMap_1=>" expression="TalendDate.parseDate(&quot;mm:ss.S&quot;, row1.timestamp)">
+  <variables name="row1.timestamp" value="null" talendType="id_String" nullable="true"/>
+  <variables name="row1.temp_ext" value="null" talendType="id_Float" nullable="true"/>
+  <variables name="row1.humidity" value="null" talendType="id_Float" nullable="true"/>
+  <variables name="row1.rack1_h" value="null" talendType="id_Double" nullable="true"/>
+  <variables name="row1.rack1_m" value="null" talendType="id_Double" nullable="true"/>
+  <variables name="row1.rack1_b" value="null" talendType="id_Double" nullable="true"/>
+  <variables name="row1.rack2_h" value="null" talendType="id_Float" nullable="true"/>
+  <variables name="row1.rack2_m" value="null" talendType="id_Float" nullable="true"/>
+  <variables name="row1.rack2_b" value="null" talendType="id_Float" nullable="true"/>
+  <variables name="row1.pwr_consumption" value="null" talendType="id_Float" nullable="true"/>
+  <variables name="row1.fuel_level" value="null" talendType="id_Float" nullable="true"/>
+  <variables name="row1.battery_health" value="null" talendType="id_Float" nullable="true"/>
+  <variables name="row1.pwr_source" value="null" talendType="id_Integer" nullable="true"/>
+  <variables name="row1.ac_status" value="null" talendType="id_Boolean" nullable="true"/>
+  <variables name="row1.door_open" value="null" talendType="id_Boolean" nullable="true"/>
+  <variables name="row1.smoke_detected" value="null" talendType="id_Boolean" nullable="true"/>
+  <variables name="row1.water_leak" value="null" talendType="id_Boolean" nullable="true"/>
+  <variables name="row1.cyber_alert" value="null" talendType="id_Boolean" nullable="true"/>
+  <variables name="row1.target" value="null" talendType="id_String" nullable="true"/>
+  <variables name="Numeric.sequence(&quot;time&quot;, 1, 1)" value="0" talendType="id_Integer"/>
+  <variables name="Numeric.sequence(&quot;s_env&quot;, 1, 1)" value="0" talendType="id_Integer"/>
+  <variables name="Numeric.sequence(&quot;s_rack&quot;, 1, 1)" value="0" talendType="id_Integer"/>
+  <variables name="Numeric.sequence(&quot;s_power&quot;, 1, 1)" value="0" talendType="id_Integer"/>
+  <variables name="Numeric.sequence(&quot;s_alert&quot;, 1, 1)" value="0" talendType="id_Integer"/>
+  <variables name="TalendDate.parseDate(&quot;yyyy-MM-dd HH:mm:ss&quot;, row1.timestamp)" value="null" talendType="id_Date"/>
+  <variables name="TalendDate.parseDate(&quot;M/d/yyyy H:mm&quot;, row1.timestamp)" value="null" talendType="id_Date"/>
+  <variables name="TalendDate.parseDate(&quot;M/d/yyyy H:mm&quot;, row1.timestamp) " value="null" talendType="id_Date"/>
+</expression:EMFExpression>
