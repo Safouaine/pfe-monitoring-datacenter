@@ -60,6 +60,8 @@ CREATE TABLE fact_readings (
     alert_id    INT     REFERENCES dim_alerts(alert_id),
     target      VARCHAR(50)
 );
+
+
 SELECT * FROM fact_readings;
 SELECT * FROM dim_environment;
 
@@ -84,5 +86,10 @@ CREATE TABLE dim_time (
     weekday     VARCHAR(20)
 );
 
-SELECT COUNT(*) FROM dim_environment;
-SELECT COUNT(*) FROM fact_readings;
+
+-- simuler 150 pannes de clim réparties au hasard
+UPDATE dim_alerts 
+SET ac_status = false 
+WHERE alert_id IN (
+    SELECT alert_id FROM dim_alerts ORDER BY RANDOM() LIMIT 150
+);

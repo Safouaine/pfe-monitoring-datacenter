@@ -23,6 +23,9 @@ services:
     build: ./ai-engine
     depends_on:
       - influxdb
+    volumes:
+      - ./data:/app/data
+      - ./ai-engine:/app
 
   web-platform:
     build: ./web-platform
