@@ -93,3 +93,12 @@ SET ac_status = false
 WHERE alert_id IN (
     SELECT alert_id FROM dim_alerts ORDER BY RANDOM() LIMIT 150
 );
+
+
+CREATE TABLE ai_predictions (
+    timestamp TIMESTAMP PRIMARY KEY,
+    risk_percentage FLOAT,
+    predicted_class INTEGER
+);
+
+SELECT count(*) FROM ai_predictions;

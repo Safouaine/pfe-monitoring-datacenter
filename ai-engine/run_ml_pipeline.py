@@ -131,7 +131,7 @@ try:
     results_df.to_sql('ai_predictions', engine, if_exists='replace', index=False)
     print("   [OK] Predictions sauvegardees avec succes dans la table 'ai_predictions' !")
 except Exception as e:
-    print(f"   [ERREUR] Impossible de se connecter a PostgreSQL sur localhost : {e}")
+    print(f"   [ERREUR] Impossible de se connclearecter a PostgreSQL sur localhost : {e}")
     print("   (Assurez-vous que le conteneur PostgreSQL est bien lancé et accessible)")
 
 print("\n=====================================================")

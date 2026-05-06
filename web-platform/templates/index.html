@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DataCenter AI Monitor – Prévision des Pannes</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --bg2: #0f1628;
+    --card: rgba(255,255,255,0.05);
+    --border: rgba(255,255,255,0.08);
+    --accent: #4f8ef7;
+    --accent2: #7c3aed;
+    --green: #10b981;
+    --yellow: #f59e0b;
+    --red: #ef4444;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    background-image:
+      radial-gradient(ellipse at 20% 0%, rgba(79,142,247,0.12) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 100%, rgba(124,58,237,0.10) 0%, transparent 60%);
+  }
+
+  /* ── Header ── */
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 40px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(10,14,26,0.8);
+    backdrop-filter: blur(12px);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .logo { display: flex; align-items: center; gap: 12px; }
+  .logo-icon {
+    width: 40px; height: 40px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .logo h1 { font-size: 18px; font-weight: 700; }
+  .logo span { font-size: 12px; color: var(--muted); }
+  #btn-refresh {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 24px; border-radius: 10px; border: none; cursor: pointer;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: white; font-size: 14px; font-weight: 600;
+    transition: opacity .2s, transform .15s;
+  }
+  #btn-refresh:hover { opacity: .85; transform: translateY(-1px); }
+  #btn-refresh:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+  .spin { display: inline-block; animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Main Layout ── */
+  main { padding: 32px 40px; max-width: 1400px; margin: 0 auto; }
+
+  /* ── Status Banner ── */
+  #status-banner {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 28px; border-radius: var(--radius);
+    background: var(--card); border: 1px solid var(--border);
+    margin-bottom: 28px; backdrop-filter: blur(8px);
+    transition: border-color .4s;
+  }
+  #status-banner.NORMAL  { border-color: rgba(16,185,129,.4); }
+  #status-banner.ALERTE  { border-color: rgba(245,158,11,.4); }
+  #status-banner.CRITIQUE{ border-color: rgba(239,68,68,.4);  }
+  .status-left { display: flex; align-items: center; gap: 16px; }
+  .status-dot {
+    width: 14px; height: 14px; border-radius: 50%;
+    box-shadow: 0 0 12px currentColor;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+  .NORMAL  .status-dot { background: var(--green); color: var(--green); }
+  .ALERTE  .status-dot { background: var(--yellow); color: var(--yellow); }
+  .CRITIQUE .status-dot { background: var(--red);   color: var(--red);   }
+  #status-label { font-size: 20px; font-weight: 700; }
+  #status-time  { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  #global-risk-pct { font-size: 40px; font-weight: 800; }
+  .NORMAL   #global-risk-pct { color: var(--green); }
+  .ALERTE   #global-risk-pct { color: var(--yellow); }
+  .CRITIQUE #global-risk-pct { color: var(--red); }
+
+  /* ── Grid layout ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 28px; }
+  @media(max-width:900px){ .two-col { grid-template-columns: 1fr; } }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 24px;
+    backdrop-filter: blur(8px);
+  }
+  .card-title {
+    font-size: 13px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: .08em; color: var(--muted); margin-bottom: 20px;
+  }
+
+  /* ── Gauge ── */
+  .gauge-wrap { display: flex; align-items: center; justify-content: center; gap: 32px; }
+  .gauge { position: relative; width: 160px; height: 160px; }
+  .gauge svg { transform: rotate(-90deg); }
+  .gauge-bg  { fill: none; stroke: rgba(255,255,255,.06); stroke-width: 12; }
+  .gauge-arc { fill: none; stroke-width: 12; stroke-linecap: round;
+               transition: stroke-dashoffset .8s ease, stroke .4s; }
+  .gauge-text {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  .gauge-pct  { font-size: 32px; font-weight: 800; }
+  .gauge-sub  { font-size: 11px; color: var(--muted); }
+  .legend { display: flex; flex-direction: column; gap: 10px; }
+  .legend-item { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+  .legend-dot  { width: 10px; height: 10px; border-radius: 50%; }
+
+  /* ── Sensor Grid ── */
+  #sensors-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+  .sensor-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px;
+    transition: transform .2s, border-color .4s;
+  }
+  .sensor-card:hover { transform: translateY(-2px); }
+  .sensor-card.normal   { border-color: rgba(16,185,129,.25); }
+  .sensor-card.warning  { border-color: rgba(245,158,11,.35); }
+  .sensor-card.critical { border-color: rgba(239,68,68,.45); }
+  .sensor-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 14px; }
+  .sensor-icon-label { display: flex; align-items: center; gap: 10px; }
+  .sensor-icon {
+    width: 38px; height: 38px; border-radius: 10px;
+    background: rgba(255,255,255,.07);
+    display: flex; align-items: center; justify-content: center; font-size: 18px;
+  }
+  .sensor-name  { font-size: 13px; font-weight: 600; }
+  .sensor-id    { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .sensor-badge {
+    font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 20px;
+    text-transform: uppercase; letter-spacing: .05em;
+  }
+  .badge-normal   { background: rgba(16,185,129,.15);  color: var(--green); }
+  .badge-warning  { background: rgba(245,158,11,.15);  color: var(--yellow);}
+  .badge-critical { background: rgba(239,68,68,.15);   color: var(--red);   }
+  .sensor-values  { display: flex; gap: 16px; margin-bottom: 14px; }
+  .val-block      { flex: 1; }
+  .val-label  { font-size: 10px; color: var(--muted); margin-bottom: 2px; }
+  .val-number { font-size: 20px; font-weight: 700; }
+  .val-unit   { font-size: 11px; color: var(--muted); margin-left: 2px; }
+  .val-delta  { font-size: 11px; margin-top: 2px; }
+  .delta-up   { color: var(--red); }
+  .delta-down { color: var(--green); }
+  .delta-flat { color: var(--muted); }
+  .risk-bar-wrap { margin-top: 4px; }
+  .risk-bar-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-bottom: 6px; }
+  .risk-bar-track {
+    height: 6px; border-radius: 3px;
+    background: rgba(255,255,255,.08);
+  }
+  .risk-bar-fill {
+    height: 100%; border-radius: 3px;
+    transition: width .8s ease;
+  }
+  .normal   .risk-bar-fill { background: var(--green); }
+  .warning  .risk-bar-fill { background: var(--yellow); }
+  .critical .risk-bar-fill { background: var(--red); }
+
+  /* ── Chart ── */
+  .chart-wrap { position: relative; height: 280px; }
+
+  /* ── Loading overlay ── */
+  #loading-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(10,14,26,.8); backdrop-filter: blur(6px);
+    z-index: 200; align-items: center; justify-content: center;
+    flex-direction: column; gap: 16px;
+  }
+  #loading-overlay.active { display: flex; }
+  .loader {
+    width: 48px; height: 48px; border: 3px solid rgba(255,255,255,.1);
+    border-top-color: var(--accent); border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  .loader-text { font-size: 14px; color: var(--muted); }
+
+  /* ── Empty state ── */
+  #empty-state {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; min-height: 300px; gap: 16px;
+    color: var(--muted);
+  }
+  #empty-state .big-icon { font-size: 56px; }
+
+  /* ── Datacenter Dropdown ── */
+  .header-right { display: flex; align-items: center; gap: 12px; }
+  .dc-select-wrap {
+    display: flex; align-items: center; gap: 8px;
+    background: rgba(255,255,255,.06); border: 1px solid var(--border);
+    border-radius: 10px; padding: 8px 14px; cursor: pointer;
+  }
+  .dc-select-wrap select {
+    background: transparent; border: none; color: var(--text);
+    font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 500;
+    cursor: pointer; outline: none; appearance: none; padding-right: 4px;
+  }
+  .dc-select-wrap select option { background: #1e293b; }
+
+  /* ── Toast Notification ── */
+  #toast-container { position: fixed; top: 80px; right: 24px; z-index: 999; display: flex; flex-direction: column; gap: 10px; }
+  .toast {
+    display: flex; align-items: flex-start; gap: 12px;
+    background: #1e1a2e; border: 1px solid rgba(239,68,68,.5);
+    border-left: 4px solid var(--red); border-radius: 12px;
+    padding: 14px 18px; max-width: 380px; box-shadow: 0 8px 32px rgba(0,0,0,.4);
+    animation: slideIn .4s ease;
+  }
+  @keyframes slideIn { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+  .toast-icon { font-size: 20px; flex-shrink: 0; }
+  .toast-title { font-size: 13px; font-weight: 700; color: var(--red); }
+  .toast-body  { font-size: 12px; color: var(--muted); margin-top: 3px; }
+  .toast-close { margin-left: auto; background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; flex-shrink: 0; }
+
+  /* ── Chatbot ── */
+  #chatbot-bubble {
+    position: fixed; bottom: 28px; right: 28px; z-index: 500;
+    display: flex; flex-direction: column; align-items: flex-end; gap: 12px;
+  }
+  #chatbot-panel {
+    width: 320px; background: #131929; border: 1px solid var(--border);
+    border-radius: 16px; overflow: hidden; box-shadow: 0 16px 48px rgba(0,0,0,.5);
+    animation: fadeUp .3s ease;
+  }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  .chat-header {
+    display: flex; align-items: center; gap: 10px; padding: 14px 16px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+  }
+  .chat-header-info { flex: 1; }
+  .chat-header-name { font-size: 13px; font-weight: 700; }
+  .chat-header-sub  { font-size: 11px; opacity: .8; }
+  .chat-close { background: none; border: none; color: white; cursor: pointer; font-size: 18px; }
+  #chat-messages {
+    height: 220px; overflow-y: auto; padding: 14px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .msg-bot, .msg-user {
+    padding: 10px 13px; border-radius: 12px; font-size: 13px; max-width: 85%;
+    line-height: 1.5;
+  }
+  .msg-bot  { background: rgba(79,142,247,.12); border: 1px solid rgba(79,142,247,.2); align-self: flex-start; }
+  .msg-user { background: rgba(124,58,237,.2); border: 1px solid rgba(124,58,237,.3); align-self: flex-end; }
+  .chat-input-row {
+    display: flex; gap: 8px; padding: 12px;
+    border-top: 1px solid var(--border);
+  }
+  #chat-input {
+    flex: 1; background: rgba(255,255,255,.06); border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 12px; color: var(--text);
+    font-family: 'Inter', sans-serif; font-size: 13px; outline: none;
+  }
+  #chat-send {
+    padding: 8px 14px; border-radius: 8px; border: none; cursor: pointer;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: white; font-size: 13px; font-weight: 600;
+  }
+  #chat-toggle {
+    width: 54px; height: 54px; border-radius: 50%; border: none; cursor: pointer;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    font-size: 24px; box-shadow: 0 4px 20px rgba(79,142,247,.4);
+    transition: transform .2s;
+  }
+  #chat-toggle:hover { transform: scale(1.1); }
+
+  /* ── Cause Probable ── */
+  .cause-box {
+    margin-top: 12px; padding: 10px 12px;
+    background: rgba(255,255,255,.04); border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+  .cause-label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
+  .cause-text  { font-size: 12px; color: #94a3b8; line-height: 1.5; }
+  .warning .cause-box { border-color: rgba(245,158,11,.25); }
+  .critical .cause-box { border-color: rgba(239,68,68,.25); }
+</style>
+</head>
+<body>
+
+<!-- Loading Overlay -->
+<div id="loading-overlay">
+  <div class="loader"></div>
+  <p class="loader-text">Analyse en cours avec Google TimesFM + Random Forest…</p>
+</div>
+
+<!-- Toast Container -->
+<div id="toast-container"></div>
+
+<!-- Chatbot -->
+<div id="chatbot-bubble">
+  <div id="chatbot-panel">
+    <div class="chat-header">
+      <span style="font-size:20px">🤖</span>
+      <div class="chat-header-info">
+        <div class="chat-header-name">Assistant IA</div>
+        <div class="chat-header-sub">Analyse temps réel</div>
+      </div>
+      <button class="chat-close" onclick="toggleChat()">✕</button>
+    </div>
+    <div id="chat-messages">
+      <div class="msg-bot">👋 Bonjour ! Posez-moi des questions sur vos alertes et leurs causes.</div>
+    </div>
+    <div class="chat-input-row">
+      <input id="chat-input" type="text" placeholder="Ex: Pourquoi le carburant baisse ?" onkeydown="if(event.key==='Enter') sendChat()">
+      <button id="chat-send" onclick="sendChat()">Envoyer</button>
+    </div>
+  </div>
+  <button id="chat-toggle" onclick="toggleChat()">💬</button>
+</div>
+
+<!-- Header -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">🏢</div>
+    <div>
+      <h1>DataCenter AI Monitor</h1>
+      <span>Prévision intelligente des pannes – Architecture Hybride</span>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="dc-select-wrap">
+      <span>🖥️</span>
+      <select id="dc-select" onchange="onDcChange()">
+        <option value="1">Datacenter 1 (Actif)</option>
+        <option value="2">Datacenter 2</option>
+        <option value="3">Datacenter 3</option>
+      </select>
+      <span style="color:var(--muted);font-size:12px">▾</span>
+    </div>
+    <button id="btn-refresh" onclick="fetchPrediction()">
+      <span id="btn-icon">⚡</span> Lancer la Prévision
+    </button>
+  </div>
+</header>
+
+<main>
+
+  <!-- Status Banner -->
+  <div id="status-banner">
+    <div class="status-left">
+      <div class="status-dot"></div>
+      <div>
+        <div id="status-label">En attente d'analyse…</div>
+        <div id="status-time">Cliquez sur "Lancer la Prévision" pour démarrer</div>
+      </div>
+    </div>
+    <div id="global-risk-pct" style="color:var(--muted)">–%</div>
+  </div>
+
+  <!-- Top row: Gauge + Chart -->
+  <div class="two-col">
+
+    <div class="card">
+      <div class="card-title">📊 Risque Global de Panne</div>
+      <div class="gauge-wrap">
+        <div class="gauge">
+          <svg viewBox="0 0 160 160" width="160" height="160">
+            <circle class="gauge-bg"  cx="80" cy="80" r="64"/>
+            <circle class="gauge-arc" cx="80" cy="80" r="64"
+              id="gauge-arc"
+              stroke="#4f8ef7"
+              stroke-dasharray="402"
+              stroke-dashoffset="402"/>
+          </svg>
+          <div class="gauge-text">
+            <span class="gauge-pct" id="gauge-pct">0%</span>
+            <span class="gauge-sub">Probabilité</span>
+          </div>
+        </div>
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div> Normal (0–40%)</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--yellow)"></div> Alerte (40–70%)</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div> Critique (&gt;70%)</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📈 Courbe de Risque sur 32 Minutes</div>
+      <div class="chart-wrap">
+        <canvas id="risk-chart"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Sensor Cards -->
+  <div class="card-title" style="margin-bottom:16px">🔬 Analyse Détaillée par Capteur</div>
+  <div id="sensors-grid">
+    <div id="empty-state">
+      <div class="big-icon">🤖</div>
+      <p>Lancez une prévision pour voir l'analyse par capteur</p>
+    </div>
+  </div>
+
+</main>
+
+<script>
+let riskChart = null;
+let lastData = null;
+let chatOpen = true;
+
+// ── Causes probables par capteur ──────────────────────────────────────────────
+const CAUSES = {
+  pwr_consumption: {
+    normal:   "Consommation dans les normes. Aucune anomalie détectée.",
+    warning:  "Surcharge partielle probable sur les baies actives. Vérifiez la distribution de charge.",
+    critical: "Surcharge critique détectée. Risque de coupure ou de dommage matériel immédiat."
+  },
+  fuel_level: {
+    normal:   "Niveau de carburant stable. Générateur opérationnel.",
+    warning:  "Cause : Fuite mineure ou consommation inhabituelle du générateur 2.",
+    critical: "Réservoir critique — démarrez le ravitaillement immédiatement."
+  },
+  battery_health: {
+    normal:   "Batterie en bon état. Autonomie nominale assurée.",
+    warning:  "Dégradation progressive des cellules. Planifiez une maintenance préventive.",
+    critical: "Batterie défaillante. L'UPS ne pourra pas assurer la continuité en cas de coupure."
+  },
+  humidity: {
+    normal:   "Taux d'humidité optimal pour les équipements actifs.",
+    warning:  "Humidité élevée — risque de condensation sur les composants sensibles.",
+    critical: "Humidité critique. Arrêt immédiat du système de refroidissement recommandé."
+  },
+  temp_ext: {
+    normal:   "Température extérieure dans la plage acceptable.",
+    warning:  "Température en hausse — le système de climatisation est sollicité anormalement.",
+    critical: "Surchauffe extérieure critique. Le datacenter ne peut plus maintenir sa température interne."
+  },
+  rack1_h: {
+    normal:   "Zone haute du Rack 1 : température nominale.",
+    warning:  "Accumulation de chaleur en haut du Rack 1 — vérifiez la ventilation verticale.",
+    critical: "Surchauffe critique en haut du Rack 1. Risque de shutdown thermique imminent."
+  },
+  rack1_m: { normal:"Rack 1 milieu : OK.", warning:"Échauffement anormal au milieu du Rack 1.", critical:"Température critique au milieu du Rack 1." },
+  rack1_b: { normal:"Rack 1 bas : OK.", warning:"Faible ventilation en bas du Rack 1.", critical:"Température critique en bas du Rack 1." },
+  rack2_h: { normal:"Rack 2 haut : OK.", warning:"Accumulation de chaleur en haut du Rack 2.", critical:"Surchauffe Rack 2 — Cluster B affecté." },
+  rack2_m: { normal:"Rack 2 milieu : OK.", warning:"Échauffement anormal au milieu du Rack 2.", critical:"Température critique milieu Rack 2." },
+  rack2_b: { normal:"Rack 2 bas : OK.", warning:"Faible ventilation en bas du Rack 2.", critical:"Température critique bas Rack 2." },
+};
+
+// ── Tooltips contextuels pour la courbe ───────────────────────────────────────
+const SPIKE_TOOLTIPS = {
+  high:   ["Hausse : Surcharge thermique détectée sur le cluster B", "Pic : Consommation anormale — vérifiez les racks", "Alerte : Température critique prévue dans les 5 prochaines minutes"],
+  medium: ["Fluctuation : Humidité instable en salle serveur", "Montée : Générateur 2 en surcharge légère"],
+};
+
+function getSpikeTip(val) {
+  if (val >= 70) return SPIKE_TOOLTIPS.high[Math.floor(Math.random()*3)];
+  if (val >= 40) return SPIKE_TOOLTIPS.medium[Math.floor(Math.random()*2)];
+  return null;
+}
+
+// ── Données simulées DC2 / DC3 ────────────────────────────────────────────────
+function simulateDcData(dc) {
+  const base = dc === '2' ? 35 : 15;
+  const status = dc === '2' ? 'ALERTE' : 'NORMAL';
+  return {
+    predicted_at: new Date().toISOString().replace('T',' ').slice(0,19),
+    global_risk_percent: base + Math.random()*15,
+    status,
+    horizon_minutes: 32,
+    risk_timeline: Array.from({length:32}, () => base + Math.random()*30),
+    sensors: [
+      {id:'temp_ext',   label:'Température Extérieure', unit:'°C',  icon:'🌡️', current_value:22+Math.random()*8, predicted_value:24+Math.random()*8, delta:1.5, risk_contribution:15, danger_level:'normal'},
+      {id:'humidity',   label:'Humidité',               unit:'%',   icon:'💧', current_value:55+Math.random()*10, predicted_value:58+Math.random()*10, delta:1.2, risk_contribution:10, danger_level:'normal'},
+      {id:'pwr_consumption', label:'Consommation Énergie', unit:'kW', icon:'⚡', current_value:50+Math.random()*20, predicted_value:55+Math.random()*20, delta:3.1, risk_contribution:20, danger_level: dc==='2'?'warning':'normal'},
+      {id:'fuel_level', label:'Niveau Carburant', unit:'%', icon:'⛽', current_value:60+Math.random()*20, predicted_value:59+Math.random()*20, delta:-0.5, risk_contribution:12, danger_level:'normal'},
+      {id:'battery_health', label:'Santé Batterie', unit:'%', icon:'🔋', current_value:85+Math.random()*10, predicted_value:84+Math.random()*10, delta:-0.3, risk_contribution:8, danger_level:'normal'},
+      {id:'rack1_h', label:'Rack 1 – Haut', unit:'°C', icon:'🖥️', current_value:25+Math.random()*8, predicted_value:27+Math.random()*8, delta:0.8, risk_contribution:9, danger_level:'normal'},
+      {id:'rack1_m', label:'Rack 1 – Milieu', unit:'°C', icon:'🖥️', current_value:24+Math.random()*8, predicted_value:25+Math.random()*8, delta:0.5, risk_contribution:7, danger_level:'normal'},
+      {id:'rack1_b', label:'Rack 1 – Bas', unit:'°C', icon:'🖥️', current_value:23+Math.random()*8, predicted_value:24+Math.random()*8, delta:0.4, risk_contribution:5, danger_level:'normal'},
+      {id:'rack2_h', label:'Rack 2 – Haut', unit:'°C', icon:'🖥️', current_value:26+Math.random()*8, predicted_value:28+Math.random()*8, delta:0.9, risk_contribution:6, danger_level: dc==='2'?'warning':'normal'},
+      {id:'rack2_m', label:'Rack 2 – Milieu', unit:'°C', icon:'🖥️', current_value:24+Math.random()*8, predicted_value:25+Math.random()*8, delta:0.3, risk_contribution:5, danger_level:'normal'},
+      {id:'rack2_b', label:'Rack 2 – Bas', unit:'°C', icon:'🖥️', current_value:23+Math.random()*8, predicted_value:24+Math.random()*8, delta:0.2, risk_contribution:3, danger_level:'normal'},
+    ]
+  };
+}
+
+// ── Rendu ─────────────────────────────────────────────────────────────────────
+function initChart(labels, data) {
+  const ctx = document.getElementById('risk-chart').getContext('2d');
+  if (riskChart) riskChart.destroy();
+  const gradient = ctx.createLinearGradient(0, 0, 0, 280);
+  gradient.addColorStop(0, 'rgba(79,142,247,0.35)');
+  gradient.addColorStop(1, 'rgba(79,142,247,0)');
+
+  // Trouver le point le plus haut pour le tooltip contextuel
+  const maxIdx = data.indexOf(Math.max(...data));
+
+  riskChart = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets: [{
+      label: 'Risque de Panne (%)', data, fill: true,
+      backgroundColor: gradient, borderColor: '#4f8ef7',
+      borderWidth: 2.5, tension: 0.4,
+      pointRadius: data.map((v,i) => i===maxIdx ? 7 : 3),
+      pointBackgroundColor: data.map((v,i) => i===maxIdx ? '#ef4444' : '#4f8ef7'),
+      pointHoverRadius: 7,
+    }]},
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1e293b', borderColor: '#334155', borderWidth: 1,
+          titleColor: '#94a3b8', bodyColor: '#e2e8f0',
+          callbacks: {
+            label: c => ` ${c.parsed.y.toFixed(1)}%`,
+            afterLabel: c => {
+              const tip = getSpikeTip(c.parsed.y);
+              return tip ? `\n  ⚠️ ${tip}` : null;
+            }
+          }
+        }
+      },
+      scales: {
+        x: { grid:{color:'rgba(255,255,255,.05)'}, ticks:{color:'#64748b',font:{size:10}} },
+        y: { min:0, max:100, grid:{color:'rgba(255,255,255,.05)'}, ticks:{color:'#64748b',font:{size:10},callback:v=>v+'%'} }
+      }
+    }
+  });
+}
+
+function updateGauge(pct) {
+  const arc = document.getElementById('gauge-arc');
+  const offset = 402 - (pct/100)*402;
+  arc.style.strokeDashoffset = offset;
+  const color = pct>=70?'#ef4444':pct>=40?'#f59e0b':'#10b981';
+  arc.style.stroke = color;
+  document.getElementById('gauge-pct').textContent = pct.toFixed(1)+'%';
+  document.getElementById('gauge-pct').style.color = color;
+}
+
+function sensorCardHTML(s) {
+  const dClass = s.danger_level;
+  const deltaSign = s.delta > 0 ? '+' : '';
+  const deltaClass = s.delta > 0.1 ? 'delta-up' : s.delta < -0.1 ? 'delta-down' : 'delta-flat';
+  const badgeClass = `badge-${dClass}`;
+  const badgeText = dClass==='normal'?'Normal':dClass==='warning'?'Alerte':'Critique';
+  const barW = Math.min(s.risk_contribution * 3, 100);
+  const cause = (CAUSES[s.id] || {})[dClass] || '';
+  const showCause = cause && (dClass !== 'normal' || ['pwr_consumption','fuel_level','battery_health','humidity'].includes(s.id));
+
+  return `
+  <div class="sensor-card ${dClass}">
+    <div class="sensor-top">
+      <div class="sensor-icon-label">
+        <div class="sensor-icon">${s.icon}</div>
+        <div><div class="sensor-name">${s.label}</div><div class="sensor-id">${s.id}</div></div>
+      </div>
+      <span class="sensor-badge ${badgeClass}">${badgeText}</span>
+    </div>
+    <div class="sensor-values">
+      <div class="val-block">
+        <div class="val-label">Valeur actuelle</div>
+        <div><span class="val-number">${s.current_value}</span><span class="val-unit">${s.unit}</span></div>
+      </div>
+      <div class="val-block">
+        <div class="val-label">Prévision +30 min</div>
+        <div><span class="val-number">${s.predicted_value}</span><span class="val-unit">${s.unit}</span></div>
+        <div class="val-delta ${deltaClass}">${deltaSign}${s.delta.toFixed(2)} ${s.unit}</div>
+      </div>
+    </div>
+    <div class="risk-bar-wrap">
+      <div class="risk-bar-label"><span>Contribution au risque</span><span>${s.risk_contribution}%</span></div>
+      <div class="risk-bar-track"><div class="risk-bar-fill" style="width:${barW}%"></div></div>
+    </div>
+    ${showCause ? `<div class="cause-box"><div class="cause-label">Cause Probable</div><div class="cause-text">${cause}</div></div>` : ''}
+  </div>`;
+}
+
+function renderData(data) {
+  lastData = data;
+  const banner = document.getElementById('status-banner');
+  banner.className = data.status;
+  document.getElementById('status-label').textContent =
+    data.status==='NORMAL' ? '✅ Système Normal' :
+    data.status==='ALERTE' ? '⚠️ Alerte Détectée' : '🚨 État Critique';
+  document.getElementById('status-time').textContent =
+    `Analyse effectuée le ${data.predicted_at} — Horizon : ${data.horizon_minutes} min`;
+  document.getElementById('global-risk-pct').textContent = data.global_risk_percent.toFixed(1) + '%';
+  updateGauge(data.global_risk_percent);
+  const labels = data.risk_timeline.map((_,i)=>`+${i+1} min`);
+  initChart(labels, data.risk_timeline);
+  document.getElementById('sensors-grid').innerHTML = data.sensors.map(sensorCardHTML).join('');
+}
+
+// ── Datacenter change ─────────────────────────────────────────────────────────
+function onDcChange() {
+  const dc = document.getElementById('dc-select').value;
+  if (dc === '1') return; // Ne rien faire, DC1 requiert l'analyse réelle
+  const data = simulateDcData(dc);
+  renderData(data);
+}
+
+// ── Toast Notifications ───────────────────────────────────────────────────────
+function showToast(title, body) {
+  const c = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.innerHTML = `
+    <div class="toast-icon">🚨</div>
+    <div><div class="toast-title">${title}</div><div class="toast-body">${body}</div></div>
+    <button class="toast-close" onclick="this.parentElement.remove()">✕</button>`;
+  c.appendChild(t);
+  setTimeout(() => t.remove(), 8000);
+}
+
+// ── Chatbot ───────────────────────────────────────────────────────────────────
+const CHAT_KB = {
+  'carburant':    "Le niveau de carburant bas peut indiquer une fuite ou une consommation excessive du générateur. Vérifiez le générateur 2 en priorité.",
+  'batterie':     "Une batterie dégradée réduit l'autonomie de l'UPS. Planifiez un remplacement préventif si la santé est sous 60%.",
+  'température':  "La hausse de température est souvent causée par un dysfonctionnement de la climatisation ou une surcharge des racks.",
+  'humidité':     "Un taux d'humidité élevé peut provoquer de la condensation sur les composants. Vérifiez les systèmes de déshumidification.",
+  'rack':         "Les anomalies sur les racks indiquent souvent un mauvais flux d'air. Vérifiez les obturations de baies et les ventilateurs.",
+  'énergie':      "Une consommation anormale peut signaler des équipements en surcharge ou des failles électriques.",
+  'panne':        "Les pannes probables dans 30 min sont calculées par l'IA en combinant TimesFM (prédiction des capteurs) et votre modèle Random Forest.",
+  'alerte':       "Une alerte signifie que le risque de panne est entre 40% et 70%. Une surveillance renforcée est recommandée.",
+  'critique':     "Un état critique (>70%) nécessite une intervention immédiate. Vérifiez les capteurs marqués en rouge.",
+};
+function sendChat() {
+  const input = document.getElementById('chat-input');
+  const msg = input.value.trim();
+  if (!msg) return;
+  const msgs = document.getElementById('chat-messages');
+  msgs.innerHTML += `<div class="msg-user">${msg}</div>`;
+  input.value = '';
+  const key = Object.keys(CHAT_KB).find(k => msg.toLowerCase().includes(k));
+  const reply = key ? CHAT_KB[key] : "Je n'ai pas de réponse précise pour cela. Consultez les cartes capteurs pour plus de détails sur les capteurs en alerte.";
+  setTimeout(() => {
+    msgs.innerHTML += `<div class="msg-bot">${reply}</div>`;
+    msgs.scrollTop = msgs.scrollHeight;
+  }, 600);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+function toggleChat() {
+  chatOpen = !chatOpen;
+  document.getElementById('chatbot-panel').style.display = chatOpen ? 'block' : 'none';
+}
+
+// ── Fetch réel DC1 ────────────────────────────────────────────────────────────
+async function fetchPrediction() {
+  const dc = document.getElementById('dc-select').value;
+  if (dc !== '1') { onDcChange(); return; }
+  const btn = document.getElementById('btn-refresh');
+  const overlay = document.getElementById('loading-overlay');
+  btn.disabled = true;
+  document.getElementById('btn-icon').innerHTML = '<span class="spin">⟳</span>';
+  overlay.classList.add('active');
+  try {
+    const res = await fetch('/api/predict');
+    if (!res.ok) throw new Error(`Erreur serveur: ${res.status}`);
+    const data = await res.json();
+    renderData(data);
+  } catch (err) {
+    alert('Erreur : ' + err.message);
+  } finally {
+    overlay.classList.remove('active');
+    btn.disabled = false;
+    document.getElementById('btn-icon').textContent = '⚡';
+  }
+}
+
+// ── Toast automatique au chargement ──────────────────────────────────────────
+setTimeout(() => showToast(
+  'ALERTE URGENTE : Datacenter 3 – Surchauffe Critique',
+  'Température rack B dépasse 45°C. Intervention requise immédiatement.'
+), 2500);
+</script>
+
