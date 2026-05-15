@@ -1,0 +1,85 @@
+{
+  "step1": {
+    "ok": true,
+    "issues": [],
+    "js_errors": [],
+    "js_warnings": []
+  },
+  "step2": {
+    "ok": true,
+    "issues": [],
+    "js_errors": [],
+    "js_warnings": []
+  },
+  "step3": {
+    "ok": false,
+    "issues": [
+      "Monitoring content (#mon-content) never became visible — still loading or API error",
+      "KPI Risk shows suspicious value: '0'",
+      "KPI sensors count is 0",
+      "Timeline has no bars rendered",
+      "Sensor grid has no sensor cards"
+    ],
+    "js_errors": [],
+    "js_warnings": []
+  },
+  "step4": {
+    "ok": true,
+    "issues": [],
+    "js_errors": [],
+    "js_warnings": []
+  },
+  "step5": {
+    "ok": true,
+    "issues": [],
+    "js_errors": [],
+    "js_warnings": []
+  },
+  "step6": {
+    "ok": true,
+    "issues": [],
+    "js_errors": [],
+    "js_warnings": []
+  },
+  "step7": {
+    "ok": true,
+    "issues": [],
+    "js_errors": [],
+    "js_warnings": []
+  },
+  "step8": {
+    "ok": true,
+    "issues": [
+      "NOTE: Grafana iframe present but content load depends on X-Frame-Options (acceptable)"
+    ],
+    "js_errors": [],
+    "js_warnings": []
+  },
+  "step9": {
+    "ok": true,
+    "issues": [],
+    "js_errors": [],
+    "js_warnings": []
+  },
+  "step10": {
+    "ok": false,
+    "issues": [
+      "SECURITY: Opérateur can access Grafana page via switchPage('grafana') — RBAC bypass!"
+    ],
+    "js_errors": [],
+    "js_warnings": []
+  },
+  "step11": {
+    "all_js_errors": [],
+    "all_js_warnings": [],
+    "native_console_errors": [
+      "Refused to display 'http://localhost:3000/' in a frame because it set 'X-Frame-Options' to 'deny'.",
+      "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+      "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+    ],
+    "native_console_warnings": [],
+    "network_errors": [
+      "GET http://localhost:3000/login?redirectTo=%2F%3Fkiosk — net::ERR_BLOCKED_BY_RESPONSE"
+    ]
+  }
+}

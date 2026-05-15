@@ -3,3 +3,4 @@ pyasn1==0.4.8
 pysmi==0.3.4
 pandas
 numpy
+influxdb-client

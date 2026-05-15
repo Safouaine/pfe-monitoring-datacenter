@@ -560,6 +560,106 @@ async def upload_dataset(file: UploadFile = File(...), name: str = Form(...)):
     return {"message": "Dataset uploadé avec succès", "id": new_id}
 
 
+# ─── Chatbot (assistant opérateur) ────────────────────────────────────────────
+_DANGER_FR = {"normal": "normal", "warning": "à surveiller", "critical": "CRITIQUE"}
+
+
+def _fmt_sensor(s: dict) -> str:
+    return f"• {s['label']} : {s['current_value']} {s.get('unit', '')} — {_DANGER_FR.get(s['danger_level'], s['danger_level'])}"
+
+
+def _chatbot_reply(question: str, pred: dict, dc_name: str) -> str:
+    """Réponse basée sur les données live du datacenter (assistant par mots-clés)."""
+    q = (question or "").lower()
+    sensors = {s["id"]: s for s in pred["sensors"]}
+    risk = pred["global_risk_percent"]
+    status = pred["status"]
+
+    def group(ids):
+        return "\n".join(_fmt_sensor(sensors[i]) for i in ids if i in sensors)
+
+    if any(w in q for w in ["bonjour", "salut", "hello", "bonsoir", "coucou", "hey"]):
+        return (f"Bonjour ! Je suis l'assistant de supervision du datacenter « {dc_name} ». "
+                "Posez-moi une question sur la température, l'humidité, la batterie, le carburant, "
+                "la consommation, les racks, le niveau de risque ou les alertes.")
+
+    if any(w in q for w in ["aide", "help", "que peux", "quoi demander", "questions"]):
+        return ("Je peux vous renseigner sur : le risque global, le statut, la température, "
+                "l'humidité, la batterie, le carburant, la consommation d'énergie, l'état des "
+                "racks et les alertes en cours. Exemple : « Quel est le niveau de risque ? »")
+
+    if any(w in q for w in ["alerte", "alarme", "problème", "probleme", "anomalie", "panne",
+                            "urgent", "défaut", "defaut"]):
+        bad = [s for s in pred["sensors"]
+               if s["danger_level"] in ("warning", "critical") and not s.get("is_binary")]
+        if not bad:
+            return f"Aucune alerte active sur « {dc_name} ». Tous les capteurs sont dans les seuils normaux."
+        return (f"{len(bad)} capteur(s) hors seuils sur « {dc_name} » :\n"
+                + "\n".join(_fmt_sensor(s) for s in bad))
+
+    if any(w in q for w in ["température", "temperature", "temp", "chaud", "chaleur",
+                            "degré", "degre"]):
+        return "Températures actuelles :\n" + group(
+            ["temp_ext", "rack1_h", "rack1_m", "rack1_b", "rack2_h", "rack2_m", "rack2_b"])
+
+    if any(w in q for w in ["humidité", "humidite", "humid"]):
+        return _fmt_sensor(sensors["humidity"]) if "humidity" in sensors else "Donnée d'humidité indisponible."
+
+    if any(w in q for w in ["batterie", "battery", "accu", "onduleur"]):
+        return _fmt_sensor(sensors["battery_health"]) if "battery_health" in sensors else "Donnée batterie indisponible."
+
+    if any(w in q for w in ["carburant", "fuel", "essence", "gasoil", "diesel", "groupe"]):
+        return _fmt_sensor(sensors["fuel_level"]) if "fuel_level" in sensors else "Donnée carburant indisponible."
+
+    if any(w in q for w in ["consommation", "énergie", "energie", "power", "électric",
+                            "electric", "puissance", "kw"]):
+        return _fmt_sensor(sensors["pwr_consumption"]) if "pwr_consumption" in sensors else "Donnée consommation indisponible."
+
+    if "rack" in q:
+        if "1" in q:
+            return "Rack 1 :\n" + group(["rack1_h", "rack1_m", "rack1_b"])
+        if "2" in q:
+            return "Rack 2 :\n" + group(["rack2_h", "rack2_m", "rack2_b"])
+        return "État des racks :\n" + group(
+            ["rack1_h", "rack1_m", "rack1_b", "rack2_h", "rack2_m", "rack2_b"])
+
+    if any(w in q for w in ["risque", "statut", "état", "etat", "niveau", "danger",
+                            "situation", "resume", "résumé", "résume", "comment", "global",
+                            "ça va", "ca va"]):
+        narrative = pred.get("risk_explanation", {}).get("narrative", "")
+        return (f"Statut du datacenter « {dc_name} » : {status}\n"
+                f"Indice de risque global : {risk} %\n{narrative}")
+
+    return (f"Je n'ai pas bien compris la question. Pour information, « {dc_name} » est en "
+            f"statut {status} (risque {risk} %). Demandez-moi par exemple la température, "
+            "l'humidité, la batterie, le carburant, la consommation, l'état des racks ou les alertes.")
+
+
+@app.post("/api/chatbot")
+async def chatbot(payload: dict = Body(...)):
+    question = payload.get("question") or ""
+    dataset_id = str(payload.get("dataset_id") or "1")
+
+    datasets = []
+    if os.path.exists(DATASETS_CONFIG_FILE):
+        with open(DATASETS_CONFIG_FILE, "r", encoding="utf-8") as f:
+            datasets = json.load(f)
+    dataset = next((d for d in datasets if d["id"] == dataset_id), None)
+    if not dataset:
+        dataset = datasets[0] if datasets else {"id": "1", "name": "Datacenter", "filename": None}
+
+    try:
+        if dataset.get("filename"):
+            pred = csv_prediction(_find_csv(dataset["filename"]))
+        else:
+            from ai_predictor import run_prediction
+            pred = run_prediction()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Données indisponibles : {e}")
+
+    return {"answer": _chatbot_reply(question, pred, dataset["name"])}
+
+
 @app.put("/api/settings/rename")
 async def rename_dataset(payload: dict = Body(...)):
     dataset_id = payload.get("id")

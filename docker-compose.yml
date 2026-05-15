@@ -1,36 +1,93 @@
 services:
   influxdb:
     image: influxdb:2.7
+    restart: unless-stopped
     ports:
       - "8086:8086"
     volumes:
       - influxdb_data:/var/lib/influxdb2
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=nouvameq123
+      - DOCKER_INFLUXDB_INIT_ORG=Nouvameq
+      - DOCKER_INFLUXDB_INIT_BUCKET=datacenter_metrics
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=nouvameq-pfe-admin-token-2026
+    healthcheck:
+      test: ["CMD", "influx", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
 
   grafana:
     image: grafana/grafana:latest
+    restart: unless-stopped
     ports:
       - "3000:3000"
     depends_on:
       - influxdb
+    environment:
+      - GF_SECURITY_ALLOW_EMBEDDING=true
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+      - GF_AUTH_DISABLE_LOGIN_FORM=false
+      - GF_SECURITY_COOKIE_SAMESITE=disabled
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
 
   snmp-collector:
     build: ./snmp-collector
+    restart: unless-stopped
     network_mode: "host" # Crucial pour contacter l'AKCP local
     depends_on:
       - influxdb
 
   ai-engine:
     build: ./ai-engine
+    image: pfe-monitoring-ai-engine
+    restart: unless-stopped
     depends_on:
       - influxdb
     volumes:
       - ./data:/app/data
       - ./ai-engine:/app
 
+  # Alimente InfluxDB en continu avec des données capteurs simulées
+  # (backfill 30 min + un point toutes les 5 s). Réutilise l'image ai-engine.
+  seeder:
+    image: pfe-monitoring-ai-engine
+    restart: unless-stopped
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    environment:
+      - INFLUX_URL=http://influxdb:8086
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./seed_influxdb.py:/app/seed_influxdb.py
+      - ./data:/app/data
+    command: ["python", "/app/seed_influxdb.py"]
+
   web-platform:
     build: ./web-platform
+    restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "5055:8000"
+    volumes:
+      - ./data:/app/data
+      - ./advanced_rf_model.pkl:/app/advanced_rf_model.pkl
+      - ./advanced_xgb_model.pkl:/app/advanced_xgb_model.pkl
+      - ./web-platform/templates:/app/templates
+      - ./web-platform/static:/app/static
+      - ./web-platform/main.py:/app/main.py
+      - ./web-platform/ai_predictor.py:/app/ai_predictor.py
+      - hf_cache:/root/.cache/huggingface
 
 volumes:
   influxdb_data:
+  hf_cache:
+  grafana_data:

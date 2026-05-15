@@ -1,0 +1,154 @@
+{
+  "id": null,
+  "uid": "dc-live",
+  "title": "Datacenter — Live Metrics",
+  "tags": ["nouvameq", "datacenter"],
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "5s",
+  "time": { "from": "now-1h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Température extérieure",
+      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 0 },
+      "datasource": { "type": "influxdb", "uid": "influxdb-nouvameq" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "orange", "value": 35 },
+            { "color": "red", "value": 42 }
+          ]}
+        }
+      },
+      "targets": [{
+        "query": "from(bucket: \"datacenter_metrics\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"data_center_sensors\")\n  |> filter(fn: (r) => r.sensor_name == \"temp_ext\")\n  |> last()"
+      }]
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Humidité",
+      "gridPos": { "h": 5, "w": 6, "x": 6, "y": 0 },
+      "datasource": { "type": "influxdb", "uid": "influxdb-nouvameq" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "orange", "value": 60 },
+            { "color": "red", "value": 80 }
+          ]}
+        }
+      },
+      "targets": [{
+        "query": "from(bucket: \"datacenter_metrics\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"data_center_sensors\")\n  |> filter(fn: (r) => r.sensor_name == \"humidity\")\n  |> last()"
+      }]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Consommation énergie",
+      "gridPos": { "h": 5, "w": 6, "x": 12, "y": 0 },
+      "datasource": { "type": "influxdb", "uid": "influxdb-nouvameq" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "kwatt",
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "orange", "value": 20 },
+            { "color": "red", "value": 28 }
+          ]}
+        }
+      },
+      "targets": [{
+        "query": "from(bucket: \"datacenter_metrics\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"data_center_sensors\")\n  |> filter(fn: (r) => r.sensor_name == \"pwr_consumption\")\n  |> last()"
+      }]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Niveau carburant",
+      "gridPos": { "h": 5, "w": 6, "x": 18, "y": 0 },
+      "datasource": { "type": "influxdb", "uid": "influxdb-nouvameq" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "red", "value": null },
+            { "color": "orange", "value": 30 },
+            { "color": "green", "value": 50 }
+          ]}
+        }
+      },
+      "targets": [{
+        "query": "from(bucket: \"datacenter_metrics\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"data_center_sensors\")\n  |> filter(fn: (r) => r.sensor_name == \"fuel_level\")\n  |> last()"
+      }]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Températures racks (temps réel)",
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 5 },
+      "datasource": { "type": "influxdb", "uid": "influxdb-nouvameq" },
+      "fieldConfig": { "defaults": { "unit": "celsius" } },
+      "targets": [{
+        "query": "from(bucket: \"datacenter_metrics\")\n  |> range(start: -1h)\n  |> filter(fn: (r) => r._measurement == \"data_center_sensors\")\n  |> filter(fn: (r) => r.sensor_name =~ /rack[12]_[hmb]/)\n  |> aggregateWindow(every: 30s, fn: mean, createEmpty: false)"
+      }]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Consommation énergie (tendance)",
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 5 },
+      "datasource": { "type": "influxdb", "uid": "influxdb-nouvameq" },
+      "fieldConfig": { "defaults": { "unit": "kwatt" } },
+      "targets": [{
+        "query": "from(bucket: \"datacenter_metrics\")\n  |> range(start: -1h)\n  |> filter(fn: (r) => r._measurement == \"data_center_sensors\")\n  |> filter(fn: (r) => r.sensor_name == \"pwr_consumption\")\n  |> aggregateWindow(every: 30s, fn: mean, createEmpty: false)"
+      }]
+    },
+    {
+      "id": 7,
+      "type": "gauge",
+      "title": "Santé batterie",
+      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 14 },
+      "datasource": { "type": "influxdb", "uid": "influxdb-nouvameq" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "red", "value": null },
+            { "color": "orange", "value": 50 },
+            { "color": "green", "value": 75 }
+          ]}
+        }
+      },
+      "targets": [{
+        "query": "from(bucket: \"datacenter_metrics\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"data_center_sensors\")\n  |> filter(fn: (r) => r.sensor_name == \"battery_health\")\n  |> last()"
+      }]
+    },
+    {
+      "id": 8,
+      "type": "bargauge",
+      "title": "Capteurs (dernière valeur)",
+      "gridPos": { "h": 6, "w": 16, "x": 8, "y": 14 },
+      "datasource": { "type": "influxdb", "uid": "influxdb-nouvameq" },
+      "fieldConfig": { "defaults": { "color": { "mode": "continuous-BlPu" } } },
+      "options": { "orientation": "horizontal", "displayMode": "gradient" },
+      "targets": [{
+        "query": "from(bucket: \"datacenter_metrics\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"data_center_sensors\")\n  |> last()\n  |> group(columns: [\"sensor_name\"])"
+      }]
+    }
+  ]
+}

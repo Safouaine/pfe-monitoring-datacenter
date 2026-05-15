@@ -1,5 +1,7 @@
 pandas
+numpy
 scikit-learn
+xgboost
 influxdb-client
 joblib
 psycopg2-binary

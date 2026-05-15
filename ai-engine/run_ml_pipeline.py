@@ -2,11 +2,14 @@ import pandas as pd
 import numpy as np
 import os
 import joblib
-from sklearn.model_selection import train_test_split, RandomizedSearchCV
+from sklearn.model_selection import RandomizedSearchCV
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report, f1_score
 from imblearn.over_sampling import SMOTE
 from sqlalchemy import create_engine
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
 
 print("=====================================================")
 print("DEMARRAGE DU PIPELINE ML AVANCE (DATACENTER)")
@@ -16,11 +19,9 @@ print("=====================================================")
 # 1. CHARGEMENT DES DONNÉES
 # ---------------------------------------------------------
 print("\n[1/6] Chargement des données...")
-data_path = 'data/datacenter_tunisia_rf_dataset.csv'
+data_path = os.path.join(PROJECT_ROOT, 'data', 'datacenter_tunisia_rf_dataset.csv')
 if not os.path.exists(data_path):
-    data_path = '../data/datacenter_tunisia_rf_dataset.csv'
-    if not os.path.exists(data_path):
-        data_path = '../data/datacenter_tunisia_20K_fixed.csv'
+    data_path = os.path.join(PROJECT_ROOT, 'data', 'datacenter_tunisia_20K_fixed.csv')
 
 df = pd.read_csv(data_path)
 df['timestamp'] = pd.to_datetime(df['timestamp'])
@@ -57,8 +58,10 @@ y = (df['target'] != 0).astype(int)
 # 3. SÉPARATION ET SMOTE (Équilibrage des classes)
 # ---------------------------------------------------------
 print("\n[3/6] Préparation des données et Équilibrage SMOTE...")
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, shuffle=True, stratify=y, random_state=42)
+from sklearn.model_selection import train_test_split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, stratify=y, random_state=42)
 
+print(f"   Split stratifié : train={len(X_train)} lignes, test={len(X_test)} lignes")
 print(f"   Répartition avant SMOTE (Entraînement) : Normaux={sum(y_train==0)}, Pannes={sum(y_train==1)}")
 
 # Application de SMOTE UNIQUEMENT sur les données d'entraînement !
@@ -72,26 +75,28 @@ print(f"   [OK] Repartition APRES SMOTE (Entrainement) : Normaux={sum(y_train_sm
 # ---------------------------------------------------------
 print("\n[4/6] Entraînement du modèle Random Forest Avancé...")
 
-# Configuration du Random Forest de base
-rf = RandomForestClassifier(random_state=42, class_weight='balanced')
+# SMOTE gère déjà le déséquilibre — pas besoin de class_weight='balanced'
+rf = RandomForestClassifier(random_state=42)
 
-# Grille de recherche simplifiée pour que ce ne soit pas trop long (RandomizedSearchCV)
+# Grille élargie — 20 combinaisons testées pour une meilleure optimisation
 param_dist = {
-    'n_estimators': [50, 100, 200],
+    'n_estimators': [100, 200, 300, 500],
     'max_depth': [None, 10, 20, 30],
-    'min_samples_split': [2, 5, 10]
+    'min_samples_split': [2, 5, 10],
+    'min_samples_leaf': [1, 2, 4],
+    'max_features': ['sqrt', 'log2'],
 }
 
-# On teste 5 combinaisons aléatoires pour trouver la meilleure
-search = RandomizedSearchCV(rf, param_distributions=param_dist, n_iter=5, cv=3, scoring='f1', n_jobs=-1, random_state=42)
+search = RandomizedSearchCV(rf, param_distributions=param_dist, n_iter=20, cv=5, scoring='f1', n_jobs=-1, random_state=42)
 search.fit(X_train_smote, y_train_smote)
 
 best_rf = search.best_estimator_
 print(f"   [OK] Meilleure configuration trouvee : {search.best_params_}")
 
-# Sauvegarde du modèle
-joblib.dump(best_rf, 'advanced_rf_model.pkl')
-print("   [SAUVEGARDE] Modele sauvegarde sous 'advanced_rf_model.pkl'")
+# Sauvegarde en chemin absolu (fonctionne quel que soit le répertoire courant)
+model_path = os.path.join(PROJECT_ROOT, 'advanced_rf_model.pkl')
+joblib.dump(best_rf, model_path)
+print(f"   [SAUVEGARDE] Modele sauvegarde sous '{model_path}'")
 
 # ---------------------------------------------------------
 # 5. ÉVALUATION

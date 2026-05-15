@@ -1,0 +1,5 @@
+[
+  {"id": "1", "name": "Datacenter Nouvameq — IA Hybride", "type": "ai", "filename": null},
+  {"id": "2", "name": "Datacenter 2 — Mode Normal", "type": "csv", "filename": "dataset_normal_1.csv"},
+  {"id": "3", "name": "Datacenter 3 — Mode Normal", "type": "csv", "filename": "dataset_normal_2.csv"}
+]

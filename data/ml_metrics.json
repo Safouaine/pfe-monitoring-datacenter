@@ -1,0 +1,205 @@
+{
+  "trained_at": "2026-05-14 17:02:51",
+  "dataset": "datacenter_tunisia_rf_dataset.csv",
+  "rows": 100000,
+  "features_count": 15,
+  "test_size": 20000,
+  "best_model": "XGBoost",
+  "f1_gap": 0.0595,
+  "models": {
+    "random_forest": {
+      "name": "Random Forest",
+      "accuracy": 0.919,
+      "precision": 0.7088122605363985,
+      "recall": 0.5434326479227864,
+      "f1": 0.6152019002375297,
+      "roc_auc": 0.8351122598339057,
+      "confusion_matrix": [
+        [
+          17085,
+          532
+        ],
+        [
+          1088,
+          1295
+        ]
+      ],
+      "feature_importance": [
+        {
+          "feature": "pwr_consumption",
+          "label": "Consommation Énergie",
+          "importance": 0.2124408787658145
+        },
+        {
+          "feature": "fuel_level",
+          "label": "Niveau Carburant",
+          "importance": 0.1629521892023145
+        },
+        {
+          "feature": "battery_health",
+          "label": "Santé Batterie",
+          "importance": 0.09736314123647954
+        },
+        {
+          "feature": "rack1_h",
+          "label": "Rack 1 — Haut",
+          "importance": 0.052479681979603864
+        },
+        {
+          "feature": "rack2_h",
+          "label": "Rack 2 — Haut",
+          "importance": 0.04698544269336409
+        },
+        {
+          "feature": "rack1_delta_temp",
+          "label": "Delta Temp. Rack 1",
+          "importance": 0.04684518630218029
+        },
+        {
+          "feature": "humidity_rolling10",
+          "label": "Humidité Moy. 10min",
+          "importance": 0.04634066401133306
+        },
+        {
+          "feature": "humidity",
+          "label": "Humidité",
+          "importance": 0.045131271203680885
+        },
+        {
+          "feature": "rack2_m",
+          "label": "Rack 2 — Milieu",
+          "importance": 0.042998544021990735
+        },
+        {
+          "feature": "rack2_delta_temp",
+          "label": "Delta Temp. Rack 2",
+          "importance": 0.04213811830506632
+        },
+        {
+          "feature": "temp_ext_rolling10",
+          "label": "Temp. Ext. Moy. 10min",
+          "importance": 0.04186778948339746
+        },
+        {
+          "feature": "temp_ext",
+          "label": "Température Extérieure",
+          "importance": 0.041650507637266895
+        },
+        {
+          "feature": "rack1_m",
+          "label": "Rack 1 — Milieu",
+          "importance": 0.04137782647302729
+        },
+        {
+          "feature": "rack1_b",
+          "label": "Rack 1 — Bas",
+          "importance": 0.0401438765911722
+        },
+        {
+          "feature": "rack2_b",
+          "label": "Rack 2 — Bas",
+          "importance": 0.039284882093308375
+        }
+      ],
+      "training_seconds": 13.01,
+      "predictions_sample": 20000
+    },
+    "xgboost": {
+      "name": "XGBoost",
+      "accuracy": 0.93755,
+      "precision": 0.8894230769230769,
+      "recall": 0.5434326479227864,
+      "f1": 0.6746548580359468,
+      "roc_auc": 0.8563336075902918,
+      "confusion_matrix": [
+        [
+          17456,
+          161
+        ],
+        [
+          1088,
+          1295
+        ]
+      ],
+      "feature_importance": [
+        {
+          "feature": "battery_health",
+          "label": "Santé Batterie",
+          "importance": 0.3310234844684601
+        },
+        {
+          "feature": "pwr_consumption",
+          "label": "Consommation Énergie",
+          "importance": 0.2178642749786377
+        },
+        {
+          "feature": "fuel_level",
+          "label": "Niveau Carburant",
+          "importance": 0.12018167227506638
+        },
+        {
+          "feature": "rack1_h",
+          "label": "Rack 1 — Haut",
+          "importance": 0.06950946897268295
+        },
+        {
+          "feature": "rack1_delta_temp",
+          "label": "Delta Temp. Rack 1",
+          "importance": 0.039285000413656235
+        },
+        {
+          "feature": "rack2_delta_temp",
+          "label": "Delta Temp. Rack 2",
+          "importance": 0.03742605447769165
+        },
+        {
+          "feature": "rack2_h",
+          "label": "Rack 2 — Haut",
+          "importance": 0.030438236892223358
+        },
+        {
+          "feature": "humidity_rolling10",
+          "label": "Humidité Moy. 10min",
+          "importance": 0.02243235521018505
+        },
+        {
+          "feature": "rack1_m",
+          "label": "Rack 1 — Milieu",
+          "importance": 0.021772125735878944
+        },
+        {
+          "feature": "rack2_b",
+          "label": "Rack 2 — Bas",
+          "importance": 0.020302878692746162
+        },
+        {
+          "feature": "temp_ext_rolling10",
+          "label": "Temp. Ext. Moy. 10min",
+          "importance": 0.019716594368219376
+        },
+        {
+          "feature": "rack2_m",
+          "label": "Rack 2 — Milieu",
+          "importance": 0.018548619002103806
+        },
+        {
+          "feature": "rack1_b",
+          "label": "Rack 1 — Bas",
+          "importance": 0.018002601340413094
+        },
+        {
+          "feature": "temp_ext",
+          "label": "Température Extérieure",
+          "importance": 0.01689649373292923
+        },
+        {
+          "feature": "humidity",
+          "label": "Humidité",
+          "importance": 0.01660016179084778
+        }
+      ],
+      "training_seconds": 1.37,
+      "predictions_sample": 20000
+    }
+  }
+}
