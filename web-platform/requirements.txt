@@ -1,5 +1,6 @@
 fastapi
 uvicorn[standard]
+aiofiles
 jinja2
 python-multipart
 timesfm
@@ -10,3 +11,4 @@ scikit-learn
 joblib
 imbalanced-learn
 numpy
+xgboost

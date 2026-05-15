@@ -1,695 +1,1731 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DataCenter AI Monitor – Prévision des Pannes</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Nouvameq AI Operations Center</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
-  :root {
-    --bg: #0a0e1a;
-    --bg2: #0f1628;
-    --card: rgba(255,255,255,0.05);
-    --border: rgba(255,255,255,0.08);
-    --accent: #4f8ef7;
-    --accent2: #7c3aed;
-    --green: #10b981;
-    --yellow: #f59e0b;
-    --red: #ef4444;
-    --text: #e2e8f0;
-    --muted: #64748b;
-    --radius: 16px;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: 'Inter', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    background-image:
-      radial-gradient(ellipse at 20% 0%, rgba(79,142,247,0.12) 0%, transparent 60%),
-      radial-gradient(ellipse at 80% 100%, rgba(124,58,237,0.10) 0%, transparent 60%);
-  }
+:root{
+  --navy-900:#0a1628;
+  --navy-800:#0f1f3a;
+  --navy-700:#1a2d4f;
+  --navy-600:#243859;
+  --slate-50:#f8fafc;
+  --slate-100:#f1f5f9;
+  --slate-200:#e2e8f0;
+  --slate-300:#cbd5e1;
+  --slate-400:#94a3b8;
+  --slate-500:#64748b;
+  --slate-600:#475569;
+  --slate-700:#334155;
+  --slate-800:#1e293b;
+  --slate-900:#0f172a;
+  --brand:#0066cc;
+  --brand-dark:#0052a3;
+  --brand-light:#e6f2ff;
+  --accent:#00a8e8;
+  --success:#10b981;
+  --success-bg:#ecfdf5;
+  --warning:#f59e0b;
+  --warning-bg:#fffbeb;
+  --danger:#dc2626;
+  --danger-bg:#fef2f2;
+  --info:#3b82f6;
+  --info-bg:#eff6ff;
+  --border:#e5e7eb;
+  --shadow-sm:0 1px 2px 0 rgba(0,0,0,.05);
+  --shadow:0 1px 3px 0 rgba(0,0,0,.1),0 1px 2px -1px rgba(0,0,0,.06);
+  --shadow-md:0 4px 6px -1px rgba(0,0,0,.07),0 2px 4px -2px rgba(0,0,0,.05);
+  --shadow-lg:0 10px 15px -3px rgba(0,0,0,.08),0 4px 6px -4px rgba(0,0,0,.05);
+  --shadow-xl:0 20px 25px -5px rgba(0,0,0,.1),0 8px 10px -6px rgba(0,0,0,.04);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+  background:var(--slate-100);
+  color:var(--slate-800);
+  -webkit-font-smoothing:antialiased;
+  line-height:1.5;
+}
+button{font-family:inherit;cursor:pointer;border:none;background:none}
+input,select{font-family:inherit}
+.mono{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums}
 
-  /* ── Header ── */
-  header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 20px 40px;
-    border-bottom: 1px solid var(--border);
-    background: rgba(10,14,26,0.8);
-    backdrop-filter: blur(12px);
-    position: sticky; top: 0; z-index: 100;
-  }
-  .logo { display: flex; align-items: center; gap: 12px; }
-  .logo-icon {
-    width: 40px; height: 40px; border-radius: 10px;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    display: flex; align-items: center; justify-content: center;
-    font-size: 18px;
-  }
-  .logo h1 { font-size: 18px; font-weight: 700; }
-  .logo span { font-size: 12px; color: var(--muted); }
-  #btn-refresh {
-    display: flex; align-items: center; gap: 8px;
-    padding: 10px 24px; border-radius: 10px; border: none; cursor: pointer;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    color: white; font-size: 14px; font-weight: 600;
-    transition: opacity .2s, transform .15s;
-  }
-  #btn-refresh:hover { opacity: .85; transform: translateY(-1px); }
-  #btn-refresh:disabled { opacity: .4; cursor: not-allowed; transform: none; }
-  .spin { display: inline-block; animation: spin 1s linear infinite; }
-  @keyframes spin { to { transform: rotate(360deg); } }
+/* ───── Login screen ───── */
+.login-screen{
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:linear-gradient(135deg,var(--navy-900) 0%,var(--navy-700) 100%);
+  position:relative;
+  overflow:hidden;
+  padding:24px;
+}
+.login-screen::before{
+  content:'';
+  position:absolute;
+  inset:0;
+  background-image:radial-gradient(circle at 20% 30%,rgba(0,168,232,.15) 0%,transparent 50%),
+                   radial-gradient(circle at 80% 70%,rgba(0,102,204,.15) 0%,transparent 50%);
+}
+.login-screen::after{
+  content:'';
+  position:absolute;inset:0;
+  background-image:linear-gradient(rgba(255,255,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.02) 1px,transparent 1px);
+  background-size:60px 60px;
+}
+.login-card{
+  position:relative;
+  z-index:2;
+  width:100%;
+  max-width:440px;
+  background:#fff;
+  border-radius:16px;
+  padding:48px 40px;
+  box-shadow:var(--shadow-xl);
+}
+.login-logo{
+  text-align:center;
+  margin-bottom:32px;
+}
+.login-logo img{max-width:140px;height:auto;margin-bottom:16px}
+.login-logo h1{
+  font-size:20px;
+  font-weight:700;
+  color:var(--navy-900);
+  letter-spacing:-0.02em;
+}
+.login-logo .subtitle{
+  font-size:13px;
+  color:var(--slate-500);
+  margin-top:4px;
+  font-weight:500;
+}
+.login-card h2{
+  font-size:24px;
+  font-weight:700;
+  color:var(--navy-900);
+  margin-bottom:8px;
+  letter-spacing:-0.02em;
+}
+.login-card .lede{
+  font-size:14px;
+  color:var(--slate-500);
+  margin-bottom:32px;
+}
+.form-group{margin-bottom:20px}
+.form-group label{
+  display:block;
+  font-size:13px;
+  font-weight:600;
+  color:var(--slate-700);
+  margin-bottom:6px;
+}
+.form-input{
+  width:100%;
+  padding:11px 14px;
+  font-size:14px;
+  border:1px solid var(--slate-300);
+  border-radius:8px;
+  background:#fff;
+  color:var(--slate-900);
+  transition:border-color .15s,box-shadow .15s;
+}
+.form-input:focus{
+  outline:none;
+  border-color:var(--brand);
+  box-shadow:0 0 0 3px rgba(0,102,204,.12);
+}
+.btn-primary{
+  width:100%;
+  padding:12px 16px;
+  background:var(--brand);
+  color:#fff;
+  font-size:14px;
+  font-weight:600;
+  border-radius:8px;
+  transition:background .15s,transform .05s;
+  letter-spacing:0.01em;
+}
+.btn-primary:hover{background:var(--brand-dark)}
+.btn-primary:active{transform:translateY(1px)}
+.login-error{
+  margin-top:14px;
+  padding:10px 12px;
+  background:var(--danger-bg);
+  border:1px solid #fecaca;
+  border-radius:6px;
+  color:var(--danger);
+  font-size:13px;
+  font-weight:500;
+  display:none;
+}
+.login-error.show{display:block}
+.login-hint{
+  margin-top:24px;
+  padding-top:20px;
+  border-top:1px solid var(--slate-200);
+  text-align:center;
+  font-size:12px;
+  color:var(--slate-500);
+}
+.login-hint code{
+  font-family:'JetBrains Mono',monospace;
+  background:var(--slate-100);
+  padding:2px 6px;
+  border-radius:4px;
+  color:var(--slate-700);
+  font-size:11px;
+}
+.quick-login{
+  display:flex;gap:10px;
+  margin-top:18px;
+}
+.quick-btn{
+  flex:1;
+  padding:10px 12px;
+  background:#fff;
+  border:1px solid var(--slate-300);
+  border-radius:8px;
+  font-size:12.5px;
+  font-weight:600;
+  color:var(--slate-700);
+  cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  transition:all .15s;
+}
+.quick-btn:hover{
+  background:var(--brand-light);
+  border-color:var(--brand);
+  color:var(--brand-dark);
+}
+.quick-btn .qb-avatar{
+  width:22px;height:22px;border-radius:50%;
+  background:linear-gradient(135deg,var(--brand) 0%,var(--accent) 100%);
+  color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;
+}
+.quick-btn.user .qb-avatar{background:linear-gradient(135deg,var(--slate-600) 0%,var(--slate-400) 100%)}
+.divider-text{
+  display:flex;align-items:center;gap:10px;
+  margin:18px 0 0;
+  font-size:11px;color:var(--slate-400);
+  font-weight:600;letter-spacing:0.06em;text-transform:uppercase;
+}
+.divider-text::before,.divider-text::after{
+  content:'';flex:1;height:1px;background:var(--slate-200);
+}
 
-  /* ── Main Layout ── */
-  main { padding: 32px 40px; max-width: 1400px; margin: 0 auto; }
+/* ───── App shell ───── */
+.app-shell{display:none;min-height:100vh}
+.app-shell.active{display:flex}
+.sidebar{
+  width:260px;
+  background:var(--navy-900);
+  color:#fff;
+  display:flex;
+  flex-direction:column;
+  position:fixed;
+  height:100vh;
+  z-index:20;
+}
+.sidebar-header{
+  padding:24px 24px 20px;
+  border-bottom:1px solid rgba(255,255,255,.08);
+}
+.sidebar-brand{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+.sidebar-brand img{width:40px;height:40px;object-fit:contain;background:#fff;border-radius:8px;padding:4px}
+.sidebar-brand-text h1{font-size:14px;font-weight:700;letter-spacing:-0.01em;line-height:1.2}
+.sidebar-brand-text p{font-size:11px;color:var(--slate-400);letter-spacing:0.05em;text-transform:uppercase;margin-top:2px}
 
-  /* ── Status Banner ── */
-  #status-banner {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 20px 28px; border-radius: var(--radius);
-    background: var(--card); border: 1px solid var(--border);
-    margin-bottom: 28px; backdrop-filter: blur(8px);
-    transition: border-color .4s;
-  }
-  #status-banner.NORMAL  { border-color: rgba(16,185,129,.4); }
-  #status-banner.ALERTE  { border-color: rgba(245,158,11,.4); }
-  #status-banner.CRITIQUE{ border-color: rgba(239,68,68,.4);  }
-  .status-left { display: flex; align-items: center; gap: 16px; }
-  .status-dot {
-    width: 14px; height: 14px; border-radius: 50%;
-    box-shadow: 0 0 12px currentColor;
-    animation: pulse 2s infinite;
-  }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
-  .NORMAL  .status-dot { background: var(--green); color: var(--green); }
-  .ALERTE  .status-dot { background: var(--yellow); color: var(--yellow); }
-  .CRITIQUE .status-dot { background: var(--red);   color: var(--red);   }
-  #status-label { font-size: 20px; font-weight: 700; }
-  #status-time  { font-size: 12px; color: var(--muted); margin-top: 2px; }
-  #global-risk-pct { font-size: 40px; font-weight: 800; }
-  .NORMAL   #global-risk-pct { color: var(--green); }
-  .ALERTE   #global-risk-pct { color: var(--yellow); }
-  .CRITIQUE #global-risk-pct { color: var(--red); }
+.sidebar-nav{padding:20px 12px;flex:1;overflow-y:auto}
+.nav-section-title{
+  font-size:10px;
+  font-weight:700;
+  color:var(--slate-500);
+  letter-spacing:0.08em;
+  text-transform:uppercase;
+  padding:8px 12px 6px;
+}
+.nav-item{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:9px 12px;
+  border-radius:6px;
+  color:var(--slate-300);
+  font-size:14px;
+  font-weight:500;
+  cursor:pointer;
+  margin-bottom:2px;
+  transition:background .12s,color .12s;
+  width:100%;
+  text-align:left;
+}
+.nav-item:hover{background:rgba(255,255,255,.05);color:#fff}
+.nav-item.active{background:var(--brand);color:#fff;font-weight:600}
+.nav-item .icon{width:18px;height:18px;flex-shrink:0;opacity:.9}
+.nav-item.active .icon{opacity:1}
+.admin-only{display:none}
+body.role-admin .admin-only{display:flex}
 
-  /* ── Grid layout ── */
-  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 28px; }
-  @media(max-width:900px){ .two-col { grid-template-columns: 1fr; } }
+.sidebar-footer{
+  padding:16px 20px;
+  border-top:1px solid rgba(255,255,255,.08);
+}
+.user-card{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:8px 0;
+}
+.user-avatar{
+  width:36px;height:36px;border-radius:50%;
+  background:linear-gradient(135deg,var(--brand) 0%,var(--accent) 100%);
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;font-size:13px;font-weight:700;
+  flex-shrink:0;
+}
+.user-info{flex:1;min-width:0}
+.user-info .name{font-size:13px;font-weight:600;color:#fff;line-height:1.2}
+.user-info .role{font-size:11px;color:var(--slate-400);margin-top:2px;text-transform:uppercase;letter-spacing:0.05em}
+.logout-btn{
+  color:var(--slate-400);
+  padding:6px;border-radius:4px;
+  transition:color .15s,background .15s;
+}
+.logout-btn:hover{color:#fff;background:rgba(255,255,255,.06)}
 
-  /* ── Cards ── */
-  .card {
-    background: var(--card); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 24px;
-    backdrop-filter: blur(8px);
-  }
-  .card-title {
-    font-size: 13px; font-weight: 600; text-transform: uppercase;
-    letter-spacing: .08em; color: var(--muted); margin-bottom: 20px;
-  }
+/* ───── Main content ───── */
+.main{margin-left:260px;flex:1;min-height:100vh;background:var(--slate-100)}
+.topbar{
+  background:#fff;
+  border-bottom:1px solid var(--border);
+  padding:16px 32px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  position:sticky;
+  top:0;
+  z-index:10;
+}
+.topbar-title{font-size:13px;color:var(--slate-500);font-weight:500}
+.topbar-title strong{color:var(--slate-900);font-weight:700}
+.topbar-actions{display:flex;align-items:center;gap:12px}
+.dataset-picker{
+  padding:8px 12px;
+  font-size:13px;
+  border:1px solid var(--slate-300);
+  border-radius:6px;
+  background:#fff;
+  color:var(--slate-700);
+  font-weight:500;
+  cursor:pointer;
+  min-width:200px;
+}
+.dataset-picker:focus{outline:none;border-color:var(--brand)}
+.refresh-btn{
+  display:flex;align-items:center;gap:6px;
+  padding:8px 14px;
+  background:var(--brand);
+  color:#fff;
+  border-radius:6px;
+  font-size:13px;
+  font-weight:600;
+}
+.refresh-btn:hover{background:var(--brand-dark)}
+.alert-bell{
+  position:relative;
+  padding:8px;
+  border-radius:6px;
+  color:var(--slate-600);
+}
+.alert-bell:hover{background:var(--slate-100);color:var(--slate-900)}
+.alert-badge{
+  position:absolute;top:4px;right:4px;
+  background:var(--danger);color:#fff;
+  font-size:10px;font-weight:700;
+  min-width:16px;height:16px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  padding:0 4px;
+}
+.alert-badge.zero{display:none}
 
-  /* ── Gauge ── */
-  .gauge-wrap { display: flex; align-items: center; justify-content: center; gap: 32px; }
-  .gauge { position: relative; width: 160px; height: 160px; }
-  .gauge svg { transform: rotate(-90deg); }
-  .gauge-bg  { fill: none; stroke: rgba(255,255,255,.06); stroke-width: 12; }
-  .gauge-arc { fill: none; stroke-width: 12; stroke-linecap: round;
-               transition: stroke-dashoffset .8s ease, stroke .4s; }
-  .gauge-text {
-    position: absolute; inset: 0;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-  }
-  .gauge-pct  { font-size: 32px; font-weight: 800; }
-  .gauge-sub  { font-size: 11px; color: var(--muted); }
-  .legend { display: flex; flex-direction: column; gap: 10px; }
-  .legend-item { display: flex; align-items: center; gap: 8px; font-size: 13px; }
-  .legend-dot  { width: 10px; height: 10px; border-radius: 50%; }
+.content{padding:24px 32px 48px}
+.page{display:none}
+.page.active{display:block;animation:fadeUp .25s ease-out}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 
-  /* ── Sensor Grid ── */
-  #sensors-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 16px;
-    margin-bottom: 28px;
-  }
-  .sensor-card {
-    background: var(--card); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 20px;
-    transition: transform .2s, border-color .4s;
-  }
-  .sensor-card:hover { transform: translateY(-2px); }
-  .sensor-card.normal   { border-color: rgba(16,185,129,.25); }
-  .sensor-card.warning  { border-color: rgba(245,158,11,.35); }
-  .sensor-card.critical { border-color: rgba(239,68,68,.45); }
-  .sensor-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 14px; }
-  .sensor-icon-label { display: flex; align-items: center; gap: 10px; }
-  .sensor-icon {
-    width: 38px; height: 38px; border-radius: 10px;
-    background: rgba(255,255,255,.07);
-    display: flex; align-items: center; justify-content: center; font-size: 18px;
-  }
-  .sensor-name  { font-size: 13px; font-weight: 600; }
-  .sensor-id    { font-size: 11px; color: var(--muted); margin-top: 2px; }
-  .sensor-badge {
-    font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 20px;
-    text-transform: uppercase; letter-spacing: .05em;
-  }
-  .badge-normal   { background: rgba(16,185,129,.15);  color: var(--green); }
-  .badge-warning  { background: rgba(245,158,11,.15);  color: var(--yellow);}
-  .badge-critical { background: rgba(239,68,68,.15);   color: var(--red);   }
-  .sensor-values  { display: flex; gap: 16px; margin-bottom: 14px; }
-  .val-block      { flex: 1; }
-  .val-label  { font-size: 10px; color: var(--muted); margin-bottom: 2px; }
-  .val-number { font-size: 20px; font-weight: 700; }
-  .val-unit   { font-size: 11px; color: var(--muted); margin-left: 2px; }
-  .val-delta  { font-size: 11px; margin-top: 2px; }
-  .delta-up   { color: var(--red); }
-  .delta-down { color: var(--green); }
-  .delta-flat { color: var(--muted); }
-  .risk-bar-wrap { margin-top: 4px; }
-  .risk-bar-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-bottom: 6px; }
-  .risk-bar-track {
-    height: 6px; border-radius: 3px;
-    background: rgba(255,255,255,.08);
-  }
-  .risk-bar-fill {
-    height: 100%; border-radius: 3px;
-    transition: width .8s ease;
-  }
-  .normal   .risk-bar-fill { background: var(--green); }
-  .warning  .risk-bar-fill { background: var(--yellow); }
-  .critical .risk-bar-fill { background: var(--red); }
+.page-header{margin-bottom:24px}
+.page-header h2{font-size:24px;font-weight:700;color:var(--slate-900);letter-spacing:-0.02em}
+.page-header .lede{font-size:14px;color:var(--slate-500);margin-top:4px}
 
-  /* ── Chart ── */
-  .chart-wrap { position: relative; height: 280px; }
+/* ───── KPI cards ───── */
+.kpi-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:16px;
+  margin-bottom:24px;
+}
+.kpi-card{
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:20px;
+  box-shadow:var(--shadow-sm);
+  position:relative;
+  overflow:hidden;
+}
+.kpi-card .kpi-accent{
+  position:absolute;top:0;left:0;right:0;height:3px;
+}
+.kpi-card.accent-brand .kpi-accent{background:var(--brand)}
+.kpi-card.accent-success .kpi-accent{background:var(--success)}
+.kpi-card.accent-warning .kpi-accent{background:var(--warning)}
+.kpi-card.accent-danger .kpi-accent{background:var(--danger)}
+.kpi-card.accent-info .kpi-accent{background:var(--info)}
+.kpi-label{
+  font-size:12px;
+  font-weight:600;
+  color:var(--slate-500);
+  text-transform:uppercase;
+  letter-spacing:0.06em;
+  margin-bottom:8px;
+}
+.kpi-value{
+  font-size:28px;
+  font-weight:700;
+  color:var(--slate-900);
+  letter-spacing:-0.02em;
+  line-height:1;
+  font-family:'JetBrains Mono',monospace;
+  font-variant-numeric:tabular-nums;
+}
+.kpi-value .unit{
+  font-size:14px;
+  color:var(--slate-500);
+  font-weight:500;
+  margin-left:4px;
+}
+.kpi-delta{
+  margin-top:10px;
+  font-size:12px;
+  font-weight:600;
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+}
+.kpi-delta.up{color:var(--danger)}
+.kpi-delta.down{color:var(--success)}
+.kpi-delta.flat{color:var(--slate-500)}
 
-  /* ── Loading overlay ── */
-  #loading-overlay {
-    display: none; position: fixed; inset: 0;
-    background: rgba(10,14,26,.8); backdrop-filter: blur(6px);
-    z-index: 200; align-items: center; justify-content: center;
-    flex-direction: column; gap: 16px;
-  }
-  #loading-overlay.active { display: flex; }
-  .loader {
-    width: 48px; height: 48px; border: 3px solid rgba(255,255,255,.1);
-    border-top-color: var(--accent); border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-  .loader-text { font-size: 14px; color: var(--muted); }
+/* ───── Cards & panels ───── */
+.panel{
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:10px;
+  box-shadow:var(--shadow-sm);
+  overflow:hidden;
+}
+.panel-header{
+  padding:16px 20px;
+  border-bottom:1px solid var(--border);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+.panel-header h3{font-size:15px;font-weight:700;color:var(--slate-900)}
+.panel-header .sub{font-size:12px;color:var(--slate-500);margin-top:2px}
+.panel-body{padding:20px}
 
-  /* ── Empty state ── */
-  #empty-state {
-    display: flex; flex-direction: column; align-items: center;
-    justify-content: center; min-height: 300px; gap: 16px;
-    color: var(--muted);
-  }
-  #empty-state .big-icon { font-size: 56px; }
+.grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:16px;margin-bottom:16px}
 
-  /* ── Datacenter Dropdown ── */
-  .header-right { display: flex; align-items: center; gap: 12px; }
-  .dc-select-wrap {
-    display: flex; align-items: center; gap: 8px;
-    background: rgba(255,255,255,.06); border: 1px solid var(--border);
-    border-radius: 10px; padding: 8px 14px; cursor: pointer;
-  }
-  .dc-select-wrap select {
-    background: transparent; border: none; color: var(--text);
-    font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 500;
-    cursor: pointer; outline: none; appearance: none; padding-right: 4px;
-  }
-  .dc-select-wrap select option { background: #1e293b; }
+/* Risk status banner */
+.status-banner{
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:24px;
+  margin-bottom:24px;
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  gap:24px;
+  align-items:center;
+  box-shadow:var(--shadow-sm);
+  position:relative;
+  overflow:hidden;
+}
+.status-banner::before{
+  content:'';position:absolute;top:0;left:0;bottom:0;width:4px;
+  background:var(--success);
+}
+.status-banner.warning::before{background:var(--warning)}
+.status-banner.critical::before{background:var(--danger)}
+.status-icon{
+  width:64px;height:64px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--success-bg);
+  color:var(--success);
+}
+.status-banner.warning .status-icon{background:var(--warning-bg);color:var(--warning)}
+.status-banner.critical .status-icon{background:var(--danger-bg);color:var(--danger)}
+.status-icon svg{width:32px;height:32px}
+.status-text .status-label{font-size:12px;font-weight:600;color:var(--slate-500);text-transform:uppercase;letter-spacing:0.06em}
+.status-text .status-value{font-size:32px;font-weight:800;color:var(--slate-900);font-family:'JetBrains Mono',monospace;letter-spacing:-0.02em;margin-top:4px}
+.status-text .status-pill{
+  display:inline-block;
+  padding:4px 10px;
+  border-radius:14px;
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:0.06em;
+  text-transform:uppercase;
+  margin-top:8px;
+  background:var(--success-bg);
+  color:var(--success);
+}
+.status-banner.warning .status-pill{background:var(--warning-bg);color:#b45309}
+.status-banner.critical .status-pill{background:var(--danger-bg);color:var(--danger)}
+.status-timeline{
+  display:flex;
+  align-items:flex-end;
+  gap:3px;
+  height:64px;
+  min-width:180px;
+}
+.timeline-bar{
+  flex:1;
+  background:var(--success);
+  border-radius:2px 2px 0 0;
+  min-height:4px;
+  transition:height .4s ease-out;
+  opacity:.6;
+}
+.timeline-bar.med{background:var(--warning)}
+.timeline-bar.high{background:var(--danger)}
+.timeline-bar:last-child{opacity:1}
 
-  /* ── Toast Notification ── */
-  #toast-container { position: fixed; top: 80px; right: 24px; z-index: 999; display: flex; flex-direction: column; gap: 10px; }
-  .toast {
-    display: flex; align-items: flex-start; gap: 12px;
-    background: #1e1a2e; border: 1px solid rgba(239,68,68,.5);
-    border-left: 4px solid var(--red); border-radius: 12px;
-    padding: 14px 18px; max-width: 380px; box-shadow: 0 8px 32px rgba(0,0,0,.4);
-    animation: slideIn .4s ease;
-  }
-  @keyframes slideIn { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-  .toast-icon { font-size: 20px; flex-shrink: 0; }
-  .toast-title { font-size: 13px; font-weight: 700; color: var(--red); }
-  .toast-body  { font-size: 12px; color: var(--muted); margin-top: 3px; }
-  .toast-close { margin-left: auto; background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; flex-shrink: 0; }
+/* Risk explanation panel */
+.risk-explanation{
+  background:#fff;
+  border:1px solid var(--border);
+  border-left:4px solid var(--info);
+  border-radius:10px;
+  padding:18px 22px;
+  margin-bottom:18px;
+  box-shadow:var(--shadow-sm);
+}
+.risk-explanation.critical{border-left-color:var(--danger);background:linear-gradient(90deg,var(--danger-bg) 0%,#fff 60%)}
+.risk-explanation.warning{border-left-color:var(--warning);background:linear-gradient(90deg,var(--warning-bg) 0%,#fff 60%)}
+.risk-explanation.normal{border-left-color:var(--success);background:linear-gradient(90deg,var(--success-bg) 0%,#fff 60%)}
+.re-title{
+  display:flex;align-items:center;gap:8px;
+  font-size:13px;font-weight:700;color:var(--slate-900);
+  margin-bottom:8px;text-transform:uppercase;letter-spacing:0.04em;
+}
+.re-title .icon{width:18px;height:18px;color:var(--info)}
+.risk-explanation.critical .re-title .icon{color:var(--danger)}
+.risk-explanation.warning .re-title .icon{color:var(--warning)}
+.risk-explanation.normal .re-title .icon{color:var(--success)}
+.re-narrative{font-size:14px;color:var(--slate-700);line-height:1.55;margin-bottom:14px}
+.re-narrative strong{color:var(--slate-900)}
+.re-contributors{display:flex;flex-wrap:wrap;gap:10px}
+.re-contrib-chip{
+  display:flex;flex-direction:column;gap:2px;
+  padding:8px 12px;
+  background:rgba(255,255,255,.6);
+  border:1px solid var(--border);
+  border-radius:8px;
+  min-width:140px;
+}
+.re-contrib-chip .cn{font-size:11px;font-weight:600;color:var(--slate-500);text-transform:uppercase;letter-spacing:0.04em}
+.re-contrib-chip .cv{font-size:14px;font-weight:700;color:var(--slate-900);font-family:'JetBrains Mono',monospace}
+.re-contrib-chip .cd{font-size:11px;font-weight:600}
+.re-contrib-chip .cd.up{color:var(--danger)}
+.re-contrib-chip .cd.down{color:var(--success)}
+.re-contrib-chip .cd.flat{color:var(--slate-500)}
+.re-contrib-chip .pct{font-size:11px;color:var(--slate-500);font-family:'JetBrains Mono',monospace}
 
-  /* ── Chatbot ── */
-  #chatbot-bubble {
-    position: fixed; bottom: 28px; right: 28px; z-index: 500;
-    display: flex; flex-direction: column; align-items: flex-end; gap: 12px;
-  }
-  #chatbot-panel {
-    width: 320px; background: #131929; border: 1px solid var(--border);
-    border-radius: 16px; overflow: hidden; box-shadow: 0 16px 48px rgba(0,0,0,.5);
-    animation: fadeUp .3s ease;
-  }
-  @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-  .chat-header {
-    display: flex; align-items: center; gap: 10px; padding: 14px 16px;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-  }
-  .chat-header-info { flex: 1; }
-  .chat-header-name { font-size: 13px; font-weight: 700; }
-  .chat-header-sub  { font-size: 11px; opacity: .8; }
-  .chat-close { background: none; border: none; color: white; cursor: pointer; font-size: 18px; }
-  #chat-messages {
-    height: 220px; overflow-y: auto; padding: 14px;
-    display: flex; flex-direction: column; gap: 10px;
-  }
-  .msg-bot, .msg-user {
-    padding: 10px 13px; border-radius: 12px; font-size: 13px; max-width: 85%;
-    line-height: 1.5;
-  }
-  .msg-bot  { background: rgba(79,142,247,.12); border: 1px solid rgba(79,142,247,.2); align-self: flex-start; }
-  .msg-user { background: rgba(124,58,237,.2); border: 1px solid rgba(124,58,237,.3); align-self: flex-end; }
-  .chat-input-row {
-    display: flex; gap: 8px; padding: 12px;
-    border-top: 1px solid var(--border);
-  }
-  #chat-input {
-    flex: 1; background: rgba(255,255,255,.06); border: 1px solid var(--border);
-    border-radius: 8px; padding: 8px 12px; color: var(--text);
-    font-family: 'Inter', sans-serif; font-size: 13px; outline: none;
-  }
-  #chat-send {
-    padding: 8px 14px; border-radius: 8px; border: none; cursor: pointer;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    color: white; font-size: 13px; font-weight: 600;
-  }
-  #chat-toggle {
-    width: 54px; height: 54px; border-radius: 50%; border: none; cursor: pointer;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    font-size: 24px; box-shadow: 0 4px 20px rgba(79,142,247,.4);
-    transition: transform .2s;
-  }
-  #chat-toggle:hover { transform: scale(1.1); }
+/* Sensor grid */
+.sensor-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(290px,1fr));
+  gap:14px;
+}
+.sensor-card{
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:16px 18px;
+  box-shadow:var(--shadow-sm);
+  position:relative;
+  transition:border-color .15s,box-shadow .15s;
+}
+.sensor-card.warning{border-color:#fcd34d}
+.sensor-card.critical{border-color:#fca5a5}
+.sensor-card::before{
+  content:'';position:absolute;top:0;left:0;bottom:0;width:3px;
+  background:var(--success);border-radius:10px 0 0 10px;
+}
+.sensor-card.warning::before{background:var(--warning)}
+.sensor-card.critical::before{background:var(--danger)}
+.sensor-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}
+.sensor-title{
+  display:flex;align-items:center;gap:8px;
+  font-size:13px;font-weight:600;color:var(--slate-700);
+}
+.sensor-icon{
+  width:32px;height:32px;border-radius:6px;
+  background:var(--slate-100);
+  display:flex;align-items:center;justify-content:center;
+  color:var(--slate-600);
+}
+.sensor-card.warning .sensor-icon{background:var(--warning-bg);color:#b45309}
+.sensor-card.critical .sensor-icon{background:var(--danger-bg);color:var(--danger)}
+.sensor-icon svg{width:18px;height:18px}
+.sensor-impact{
+  font-size:11px;font-weight:600;
+  color:var(--slate-500);
+  background:var(--slate-100);
+  padding:2px 8px;border-radius:10px;
+  font-family:'JetBrains Mono',monospace;
+}
+.sensor-values{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:12px}
+.sensor-now{display:flex;flex-direction:column;gap:2px}
+.sensor-now .lbl{font-size:10px;text-transform:uppercase;color:var(--slate-500);font-weight:600;letter-spacing:0.05em}
+.sensor-now .val{font-size:22px;font-weight:700;color:var(--slate-900);font-family:'JetBrains Mono',monospace;line-height:1}
+.sensor-now .val .u{font-size:13px;color:var(--slate-500);font-weight:500;margin-left:2px}
+.sensor-pred{text-align:right;display:flex;flex-direction:column;gap:2px}
+.sensor-pred .lbl{font-size:10px;text-transform:uppercase;color:var(--slate-500);font-weight:600;letter-spacing:0.05em}
+.sensor-pred .val{font-size:18px;font-weight:600;color:var(--slate-700);font-family:'JetBrains Mono',monospace;line-height:1}
+.sensor-delta{
+  font-size:11px;font-weight:700;
+  font-family:'JetBrains Mono',monospace;
+}
+.sensor-delta.up{color:var(--danger)}
+.sensor-delta.down{color:var(--success)}
+.sensor-delta.flat{color:var(--slate-500)}
+.sensor-bar{
+  margin-top:10px;
+  height:4px;background:var(--slate-100);border-radius:2px;overflow:hidden;
+}
+.sensor-bar-fill{
+  height:100%;background:var(--brand);
+  width:0%;transition:width 1s cubic-bezier(.4,0,.2,1);
+}
+.sensor-card.warning .sensor-bar-fill{background:var(--warning)}
+.sensor-card.critical .sensor-bar-fill{background:var(--danger)}
+.sensor-insight{
+  margin-top:12px;
+  padding:8px 10px;
+  background:var(--slate-50);
+  border-radius:6px;
+  font-size:11.5px;
+  color:var(--slate-600);
+  line-height:1.45;
+  border-left:2px solid var(--slate-300);
+}
+.sensor-card.warning .sensor-insight{background:var(--warning-bg);border-color:var(--warning);color:#92400e}
+.sensor-card.critical .sensor-insight{background:var(--danger-bg);border-color:var(--danger);color:#991b1b}
 
-  /* ── Cause Probable ── */
-  .cause-box {
-    margin-top: 12px; padding: 10px 12px;
-    background: rgba(255,255,255,.04); border: 1px solid var(--border);
-    border-radius: 10px;
-  }
-  .cause-label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
-  .cause-text  { font-size: 12px; color: #94a3b8; line-height: 1.5; }
-  .warning .cause-box { border-color: rgba(245,158,11,.25); }
-  .critical .cause-box { border-color: rgba(239,68,68,.25); }
+/* Forecasting */
+.forecast-chart-wrap{height:280px;position:relative}
+.forecast-controls{
+  display:flex;flex-wrap:wrap;gap:16px;align-items:center;
+  margin-bottom:18px;
+}
+.control-group{display:flex;flex-direction:column;gap:6px}
+.control-label{
+  font-size:10px;font-weight:700;
+  color:var(--slate-500);
+  text-transform:uppercase;letter-spacing:0.06em;
+}
+.forecast-tabs{
+  display:flex;gap:4px;
+  background:var(--slate-100);
+  padding:4px;border-radius:8px;
+  width:fit-content;
+}
+.forecast-tab{
+  padding:6px 14px;
+  font-size:12px;font-weight:600;
+  color:var(--slate-600);
+  border-radius:5px;
+  cursor:pointer;
+  transition:background .15s,color .15s;
+  display:flex;align-items:center;gap:6px;
+}
+.forecast-tab.active{background:#fff;color:var(--slate-900);box-shadow:var(--shadow-sm)}
+.forecast-tab .dot{width:8px;height:8px;border-radius:50%;background:currentColor}
+.forecast-tab[data-model="timesfm"] .dot{background:#0066cc}
+.forecast-tab[data-model="rf"]      .dot{background:#10b981}
+.forecast-tab[data-model="xgb"]     .dot{background:#f59e0b}
+.model-info-card{
+  margin-left:auto;
+  padding:8px 14px;
+  background:var(--brand-light);
+  border:1px solid #bfdbfe;
+  border-radius:8px;
+  font-size:12px;
+  color:var(--brand-dark);
+  font-weight:500;
+}
+.model-info-card strong{color:var(--navy-900);font-weight:700}
+
+/* Alerts page enhancements */
+.alerts-stats{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+  gap:12px;
+  margin-bottom:18px;
+}
+.alert-stat-card{
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:14px 16px;
+  display:flex;align-items:center;gap:12px;
+}
+.alert-stat-card .stat-icon{
+  width:36px;height:36px;border-radius:8px;
+  background:var(--slate-100);
+  display:flex;align-items:center;justify-content:center;
+  color:var(--slate-600);
+}
+.alert-stat-card.critical .stat-icon{background:var(--danger-bg);color:var(--danger)}
+.alert-stat-card.warning  .stat-icon{background:var(--warning-bg);color:var(--warning)}
+.alert-stat-card.info     .stat-icon{background:var(--info-bg);color:var(--info)}
+.alert-stat-card .stat-body{flex:1;min-width:0}
+.alert-stat-card .stat-label{font-size:11px;font-weight:600;color:var(--slate-500);text-transform:uppercase;letter-spacing:0.05em}
+.alert-stat-card .stat-value{font-size:22px;font-weight:700;color:var(--slate-900);font-family:'JetBrains Mono',monospace;line-height:1;margin-top:2px}
+.dc-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:2px 8px;border-radius:12px;
+  background:var(--navy-700);color:#fff;
+  font-size:10.5px;font-weight:600;
+  letter-spacing:0.03em;
+}
+.dc-badge .dc-dot{width:6px;height:6px;border-radius:50%;background:var(--accent)}
+.alert-category{
+  font-size:11px;color:var(--slate-500);
+  font-weight:600;letter-spacing:0.04em;
+  text-transform:uppercase;
+  margin-top:6px;
+  display:inline-block;
+  padding:2px 8px;
+  background:var(--slate-100);border-radius:10px;
+}
+
+/* ML Dashboard */
+.ml-compare-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+  gap:16px;margin-bottom:16px;
+}
+.model-card{
+  background:#fff;border:1px solid var(--border);border-radius:10px;
+  padding:20px;position:relative;overflow:hidden;
+  box-shadow:var(--shadow-sm);
+}
+.model-card.best{border-color:#a7f3d0}
+.model-card.best::before{
+  content:'MEILLEUR MODÈLE';
+  position:absolute;top:0;right:0;
+  background:linear-gradient(135deg,var(--success) 0%,#059669 100%);
+  color:#fff;font-size:10px;font-weight:700;
+  padding:4px 12px;border-radius:0 10px 0 8px;
+  letter-spacing:0.06em;
+}
+.model-card h4{
+  font-size:18px;font-weight:700;color:var(--slate-900);
+  margin-bottom:4px;display:flex;align-items:center;gap:8px;
+}
+.model-card .model-sub{font-size:12px;color:var(--slate-500);margin-bottom:18px}
+.metric-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--slate-100)}
+.metric-row:last-child{border:none}
+.metric-row .lbl{font-size:13px;color:var(--slate-600);font-weight:500}
+.metric-row .val{font-size:15px;font-weight:700;color:var(--slate-900);font-family:'JetBrains Mono',monospace}
+
+.fi-list{display:flex;flex-direction:column;gap:8px}
+.fi-row{display:grid;grid-template-columns:1fr 200px auto;gap:12px;align-items:center}
+.fi-row .name{font-size:13px;color:var(--slate-700);font-weight:500}
+.fi-row .bar{height:8px;background:var(--slate-100);border-radius:4px;overflow:hidden}
+.fi-row .bar-fill{height:100%;background:linear-gradient(90deg,var(--brand) 0%,var(--accent) 100%);transition:width .8s ease-out;width:0%}
+.fi-row .v{font-size:12px;color:var(--slate-600);font-family:'JetBrains Mono',monospace;font-weight:600;text-align:right}
+
+.cm-table{width:100%;border-collapse:collapse;font-size:13px}
+.cm-table th{background:var(--slate-50);color:var(--slate-600);font-weight:600;padding:10px;text-align:center;border:1px solid var(--border)}
+.cm-table td{padding:14px;text-align:center;border:1px solid var(--border);font-family:'JetBrains Mono',monospace;font-weight:700;font-size:18px;color:var(--slate-900)}
+.cm-table .corner{background:var(--slate-50);color:var(--slate-500);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.05em}
+.cm-table .tp,.cm-table .tn{background:var(--success-bg);color:#065f46}
+.cm-table .fp,.cm-table .fn{background:var(--danger-bg);color:#991b1b}
+
+/* Alerts panel */
+.alerts-list{display:flex;flex-direction:column;gap:8px}
+.alert-item{
+  display:flex;align-items:flex-start;gap:12px;
+  padding:12px 14px;
+  background:#fff;
+  border:1px solid var(--border);
+  border-left:3px solid var(--slate-400);
+  border-radius:8px;
+}
+.alert-item.warning{border-left-color:var(--warning);background:var(--warning-bg)}
+.alert-item.critical{border-left-color:var(--danger);background:var(--danger-bg)}
+.alert-item .alert-icon-wrap{flex-shrink:0;width:32px;height:32px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center}
+.alert-item.warning .alert-icon-wrap{color:var(--warning)}
+.alert-item.critical .alert-icon-wrap{color:var(--danger)}
+.alert-item .alert-body{flex:1;min-width:0}
+.alert-item .alert-title{font-size:13px;font-weight:700;color:var(--slate-900);margin-bottom:2px}
+.alert-item .alert-msg{font-size:12.5px;color:var(--slate-700);line-height:1.4}
+.alert-item .alert-time{font-size:11px;color:var(--slate-500);margin-top:4px;font-family:'JetBrains Mono',monospace}
+
+/* Loader */
+.loader{
+  display:flex;align-items:center;justify-content:center;
+  padding:80px 20px;flex-direction:column;gap:16px;
+}
+.loader .ring{
+  width:38px;height:38px;
+  border:3px solid var(--slate-200);
+  border-top-color:var(--brand);
+  border-radius:50%;
+  animation:spin .8s linear infinite;
+}
+.loader .text{font-size:13px;color:var(--slate-500);font-weight:500}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Toasts */
+.toast-container{position:fixed;top:80px;right:24px;z-index:100;display:flex;flex-direction:column;gap:10px;max-width:380px}
+.toast{
+  background:#fff;
+  border:1px solid var(--border);
+  border-left:3px solid var(--info);
+  border-radius:8px;
+  padding:12px 14px;
+  box-shadow:var(--shadow-lg);
+  display:flex;gap:10px;align-items:flex-start;
+  animation:slideInRight .3s cubic-bezier(.34,1.56,.64,1);
+}
+.toast.warning{border-left-color:var(--warning)}
+.toast.critical{border-left-color:var(--danger)}
+.toast .ti{font-size:13px;font-weight:700;color:var(--slate-900);margin-bottom:2px}
+.toast .tm{font-size:12px;color:var(--slate-600);line-height:1.4}
+@keyframes slideInRight{from{transform:translateX(120%)}to{transform:translateX(0)}}
+
+/* Empty state */
+.empty-state{padding:64px 20px;text-align:center}
+.empty-state .icon{width:48px;height:48px;border-radius:50%;background:var(--slate-100);display:inline-flex;align-items:center;justify-content:center;color:var(--slate-500);margin-bottom:16px}
+.empty-state h4{font-size:16px;font-weight:700;color:var(--slate-900);margin-bottom:6px}
+.empty-state p{font-size:13px;color:var(--slate-500);max-width:380px;margin:0 auto}
+.empty-state code{font-family:'JetBrains Mono',monospace;background:var(--slate-100);padding:2px 6px;border-radius:4px;font-size:11px}
+
+/* Responsive */
+@media (max-width:1024px){
+  .sidebar{transform:translateX(-100%);transition:transform .25s}
+  .sidebar.open{transform:translateX(0)}
+  .main{margin-left:0}
+}
 </style>
 </head>
 <body>
 
-<!-- Loading Overlay -->
-<div id="loading-overlay">
-  <div class="loader"></div>
-  <p class="loader-text">Analyse en cours avec Google TimesFM + Random Forest…</p>
+<!-- ─────── LOGIN ─────── -->
+<div id="login-screen" class="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <img src="/static/logo.png" alt="Nouvameq" onerror="this.style.display='none'" />
+      <h1>NOUVAMEQ TUNISIA</h1>
+      <div class="subtitle">AI OPERATIONS CENTER</div>
+    </div>
+    <h2>Connexion sécurisée</h2>
+    <p class="lede">Plateforme de surveillance prédictive du datacenter.</p>
+    <form id="login-form" onsubmit="event.preventDefault();handleLogin()">
+      <div class="form-group">
+        <label for="username">Identifiant</label>
+        <input id="username" class="form-input" autocomplete="username" required />
+      </div>
+      <div class="form-group">
+        <label for="password">Mot de passe</label>
+        <input id="password" class="form-input" type="password" autocomplete="current-password" required />
+      </div>
+      <button type="submit" class="btn-primary">Accéder à la plateforme</button>
+      <div id="login-error" class="login-error"></div>
+    </form>
+
+    <div class="divider-text">Accès rapide</div>
+    <div class="quick-login">
+      <button type="button" class="quick-btn" onclick="quickLogin('admin','admin')">
+        <span class="qb-avatar">A</span>
+        Admin
+      </button>
+      <button type="button" class="quick-btn user" onclick="quickLogin('user','user')">
+        <span class="qb-avatar">U</span>
+        Opérateur
+      </button>
+    </div>
+
+    <div class="login-hint">
+      Démonstration PFE : <code>admin / admin</code> · <code>user / user</code>
+    </div>
+  </div>
 </div>
 
-<!-- Toast Container -->
-<div id="toast-container"></div>
+<!-- ─────── APP SHELL ─────── -->
+<div id="app-shell" class="app-shell">
 
-<!-- Chatbot -->
-<div id="chatbot-bubble">
-  <div id="chatbot-panel">
-    <div class="chat-header">
-      <span style="font-size:20px">🤖</span>
-      <div class="chat-header-info">
-        <div class="chat-header-name">Assistant IA</div>
-        <div class="chat-header-sub">Analyse temps réel</div>
-      </div>
-      <button class="chat-close" onclick="toggleChat()">✕</button>
-    </div>
-    <div id="chat-messages">
-      <div class="msg-bot">👋 Bonjour ! Posez-moi des questions sur vos alertes et leurs causes.</div>
-    </div>
-    <div class="chat-input-row">
-      <input id="chat-input" type="text" placeholder="Ex: Pourquoi le carburant baisse ?" onkeydown="if(event.key==='Enter') sendChat()">
-      <button id="chat-send" onclick="sendChat()">Envoyer</button>
-    </div>
-  </div>
-  <button id="chat-toggle" onclick="toggleChat()">💬</button>
-</div>
-
-<!-- Header -->
-<header>
-  <div class="logo">
-    <div class="logo-icon">🏢</div>
-    <div>
-      <h1>DataCenter AI Monitor</h1>
-      <span>Prévision intelligente des pannes – Architecture Hybride</span>
-    </div>
-  </div>
-  <div class="header-right">
-    <div class="dc-select-wrap">
-      <span>🖥️</span>
-      <select id="dc-select" onchange="onDcChange()">
-        <option value="1">Datacenter 1 (Actif)</option>
-        <option value="2">Datacenter 2</option>
-        <option value="3">Datacenter 3</option>
-      </select>
-      <span style="color:var(--muted);font-size:12px">▾</span>
-    </div>
-    <button id="btn-refresh" onclick="fetchPrediction()">
-      <span id="btn-icon">⚡</span> Lancer la Prévision
-    </button>
-  </div>
-</header>
-
-<main>
-
-  <!-- Status Banner -->
-  <div id="status-banner">
-    <div class="status-left">
-      <div class="status-dot"></div>
-      <div>
-        <div id="status-label">En attente d'analyse…</div>
-        <div id="status-time">Cliquez sur "Lancer la Prévision" pour démarrer</div>
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-brand">
+        <img src="/static/logo.png" alt="Nouvameq" onerror="this.style.display='none'" />
+        <div class="sidebar-brand-text">
+          <h1>NOUVAMEQ</h1>
+          <p>AI Ops Center</p>
+        </div>
       </div>
     </div>
-    <div id="global-risk-pct" style="color:var(--muted)">–%</div>
-  </div>
 
-  <!-- Top row: Gauge + Chart -->
-  <div class="two-col">
+    <nav class="sidebar-nav">
+      <div class="nav-section-title">Opérations</div>
+      <button class="nav-item active" data-page="monitoring" onclick="switchPage('monitoring')">
+        <svg class="icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2 4 4 8-8 4 4"/></svg>
+        Monitoring temps réel
+      </button>
+      <button class="nav-item" data-page="forecast" onclick="switchPage('forecast')">
+        <svg class="icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+        Prévisions
+      </button>
+      <button class="nav-item" data-page="alerts" onclick="switchPage('alerts')">
+        <svg class="icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2a2 2 0 01-.6 1.4L4 17h5m6 0a3 3 0 11-6 0"/></svg>
+        Alertes
+      </button>
 
-    <div class="card">
-      <div class="card-title">📊 Risque Global de Panne</div>
-      <div class="gauge-wrap">
-        <div class="gauge">
-          <svg viewBox="0 0 160 160" width="160" height="160">
-            <circle class="gauge-bg"  cx="80" cy="80" r="64"/>
-            <circle class="gauge-arc" cx="80" cy="80" r="64"
-              id="gauge-arc"
-              stroke="#4f8ef7"
-              stroke-dasharray="402"
-              stroke-dashoffset="402"/>
-          </svg>
-          <div class="gauge-text">
-            <span class="gauge-pct" id="gauge-pct">0%</span>
-            <span class="gauge-sub">Probabilité</span>
+      <div class="nav-section-title admin-only" style="margin-top:18px">Intelligence Artificielle</div>
+      <button class="nav-item admin-only" data-page="ml" onclick="switchPage('ml')">
+        <svg class="icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19V13M15 19V9M21 19V5M3 19h18"/></svg>
+        Modèles ML
+      </button>
+      <button class="nav-item admin-only" data-page="grafana" onclick="switchPage('grafana')">
+        <svg class="icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/></svg>
+        Dashboards Grafana
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-card">
+        <div class="user-avatar" id="user-avatar">A</div>
+        <div class="user-info">
+          <div class="name" id="user-name">Administrateur</div>
+          <div class="role" id="user-role">Admin</div>
+        </div>
+        <button class="logout-btn" onclick="handleLogout()" title="Déconnexion">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title">
+        <strong id="page-title">Monitoring temps réel</strong>
+        &nbsp;·&nbsp;<span id="page-sub">Indicateurs et statut global du datacenter</span>
+      </div>
+      <div class="topbar-actions">
+        <select id="dataset-picker" class="dataset-picker" onchange="onDatasetChange()"></select>
+        <button class="refresh-btn" onclick="refreshCurrentPage()">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          Actualiser
+        </button>
+        <button class="alert-bell" onclick="switchPage('alerts')" title="Alertes">
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2a2 2 0 01-.6 1.4L4 17h5m6 0a3 3 0 11-6 0"/></svg>
+          <span class="alert-badge zero" id="alert-badge">0</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ─── Monitoring page ─── -->
+      <div id="page-monitoring" class="page active">
+        <div class="page-header">
+          <h2>Monitoring temps réel</h2>
+          <p class="lede" id="mon-lede">Analyse hybride <strong>TimesFM + IA</strong> sur le datacenter sélectionné — prévision sur <strong>32 minutes</strong>.</p>
+        </div>
+
+        <div id="mon-loader" class="loader"><div class="ring"></div><div class="text">Analyse IA en cours…</div></div>
+
+        <div id="mon-content" style="display:none">
+          <!-- KPIs -->
+          <div class="kpi-grid">
+            <div class="kpi-card accent-brand">
+              <div class="kpi-accent"></div>
+              <div class="kpi-label">Indice de risque</div>
+              <div class="kpi-value mono"><span id="kpi-risk">0</span><span class="unit">%</span></div>
+              <div class="kpi-delta flat" id="kpi-risk-delta">— Horizon 32 min</div>
+            </div>
+            <div class="kpi-card accent-info">
+              <div class="kpi-accent"></div>
+              <div class="kpi-label">Consommation</div>
+              <div class="kpi-value mono"><span id="kpi-power">0</span><span class="unit">kW</span></div>
+              <div class="kpi-delta flat" id="kpi-power-delta">— Prévision IA</div>
+            </div>
+            <div class="kpi-card accent-success">
+              <div class="kpi-accent"></div>
+              <div class="kpi-label">Capteurs actifs</div>
+              <div class="kpi-value mono"><span id="kpi-sensors">0</span></div>
+              <div class="kpi-delta flat">— Surveillance continue</div>
+            </div>
+            <div class="kpi-card accent-warning">
+              <div class="kpi-accent"></div>
+              <div class="kpi-label">Alertes actives</div>
+              <div class="kpi-value mono"><span id="kpi-alerts">0</span></div>
+              <div class="kpi-delta flat" id="kpi-alerts-sub">— Aucune anomalie</div>
+            </div>
+          </div>
+
+          <!-- Status banner -->
+          <div id="status-banner" class="status-banner">
+            <div class="status-icon">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <div class="status-text">
+              <div class="status-label">Indice de risque global (modèle IA)</div>
+              <div class="status-value mono"><span id="banner-risk">0</span>%</div>
+              <span class="status-pill" id="banner-pill">NORMAL</span>
+              <div style="font-size:11px;color:var(--slate-500);margin-top:6px;font-family:'JetBrains Mono',monospace">
+                Dernière analyse : <span id="banner-time">--:--:--</span>
+              </div>
+            </div>
+            <div class="status-timeline" id="status-timeline"></div>
+          </div>
+
+          <!-- Risk explanation -->
+          <div id="risk-explanation" class="risk-explanation">
+            <div class="re-title">
+              <svg class="icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              Pourquoi ce niveau de risque ?
+            </div>
+            <div id="re-narrative" class="re-narrative">—</div>
+            <div id="re-contributors" class="re-contributors"></div>
+          </div>
+
+          <!-- Sensors -->
+          <div class="panel" style="margin-bottom:16px">
+            <div class="panel-header">
+              <div>
+                <h3>État des capteurs</h3>
+                <div class="sub">Chaque capteur affiche sa contribution au risque global calculée par le Random Forest</div>
+              </div>
+            </div>
+            <div class="panel-body">
+              <div id="sensor-grid" class="sensor-grid"></div>
+            </div>
           </div>
         </div>
-        <div class="legend">
-          <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div> Normal (0–40%)</div>
-          <div class="legend-item"><div class="legend-dot" style="background:var(--yellow)"></div> Alerte (40–70%)</div>
-          <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div> Critique (&gt;70%)</div>
+      </div>
+
+      <!-- ─── Forecast page ─── -->
+      <div id="page-forecast" class="page">
+        <div class="page-header">
+          <h2>Prévisions IA</h2>
+          <p class="lede">Projection à court terme des capteurs critiques — choisissez le modèle de prédiction et l'horizon.</p>
+        </div>
+
+        <div class="forecast-controls">
+          <div class="control-group">
+            <span class="control-label">Horizon de prédiction</span>
+            <div class="forecast-tabs">
+              <div class="forecast-tab active" data-horizon="24" onclick="changeHorizon(24)">24 min</div>
+              <div class="forecast-tab" data-horizon="48" onclick="changeHorizon(48)">48 min</div>
+              <div class="forecast-tab" data-horizon="96" onclick="changeHorizon(96)">96 min</div>
+            </div>
+          </div>
+          <div class="control-group">
+            <span class="control-label">Modèle de prédiction</span>
+            <div class="forecast-tabs">
+              <div class="forecast-tab active" data-model="timesfm" onclick="changeModel('timesfm')"><span class="dot"></span>TimesFM</div>
+              <div class="forecast-tab" data-model="rf" onclick="changeModel('rf')"><span class="dot"></span>Random Forest</div>
+              <div class="forecast-tab" data-model="xgb" onclick="changeModel('xgb')"><span class="dot"></span>XGBoost</div>
+            </div>
+          </div>
+          <div class="model-info-card" id="model-info-card">
+            <strong>TimesFM</strong> — foundation model Google (200M params)
+          </div>
+        </div>
+
+        <div id="forecast-loader" class="loader"><div class="ring"></div><div class="text">Génération des prévisions…</div></div>
+        <div id="forecast-content" style="display:none">
+          <div class="grid-2">
+            <div class="panel"><div class="panel-header"><div><h3>Température extérieure</h3><div class="sub">°C — Historique vs prédit</div></div></div><div class="panel-body"><div class="forecast-chart-wrap"><canvas id="chart-temp"></canvas></div></div></div>
+            <div class="panel"><div class="panel-header"><div><h3>Consommation énergie</h3><div class="sub">kW — Historique vs prédit</div></div></div><div class="panel-body"><div class="forecast-chart-wrap"><canvas id="chart-power"></canvas></div></div></div>
+          </div>
+          <div class="grid-2">
+            <div class="panel"><div class="panel-header"><div><h3>Humidité</h3><div class="sub">% — Historique vs prédit</div></div></div><div class="panel-body"><div class="forecast-chart-wrap"><canvas id="chart-humidity"></canvas></div></div></div>
+            <div class="panel"><div class="panel-header"><div><h3>Niveau carburant</h3><div class="sub">% — Historique vs prédit</div></div></div><div class="panel-body"><div class="forecast-chart-wrap"><canvas id="chart-fuel"></canvas></div></div></div>
+          </div>
         </div>
       </div>
-    </div>
 
-    <div class="card">
-      <div class="card-title">📈 Courbe de Risque sur 32 Minutes</div>
-      <div class="chart-wrap">
-        <canvas id="risk-chart"></canvas>
+      <!-- ─── Alerts page (toutes les datacenters) ─── -->
+      <div id="page-alerts" class="page">
+        <div class="page-header">
+          <h2>Système d'alertes — Tous datacenters</h2>
+          <p class="lede">Vue consolidée des anomalies détectées par l'IA sur l'ensemble du parc.</p>
+        </div>
+
+        <div class="alerts-stats">
+          <div class="alert-stat-card">
+            <div class="stat-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/></svg></div>
+            <div class="stat-body"><div class="stat-label">Datacenters</div><div class="stat-value" id="stat-dc">0</div></div>
+          </div>
+          <div class="alert-stat-card critical">
+            <div class="stat-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
+            <div class="stat-body"><div class="stat-label">Critiques</div><div class="stat-value" id="stat-critical">0</div></div>
+          </div>
+          <div class="alert-stat-card warning">
+            <div class="stat-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4a2 2 0 00-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z"/></svg></div>
+            <div class="stat-body"><div class="stat-label">Avertissements</div><div class="stat-value" id="stat-warning">0</div></div>
+          </div>
+          <div class="alert-stat-card info">
+            <div class="stat-icon"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"/></svg></div>
+            <div class="stat-body"><div class="stat-label">Total alertes</div><div class="stat-value" id="stat-total">0</div></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header"><div><h3>Alertes consolidées</h3><div class="sub" id="alerts-sub">Triées par sévérité, datacenter visible sur chaque alerte</div></div></div>
+          <div class="panel-body">
+            <div id="alerts-list" class="alerts-list"></div>
+          </div>
+        </div>
       </div>
+
+      <!-- ─── ML Dashboard (admin only) ─── -->
+      <div id="page-ml" class="page">
+        <div class="page-header">
+          <h2>Comparatif des modèles ML</h2>
+          <p class="lede">Random Forest vs XGBoost — accessible uniquement aux administrateurs.</p>
+        </div>
+
+        <div id="ml-loader" class="loader"><div class="ring"></div><div class="text">Chargement des métriques…</div></div>
+        <div id="ml-empty" class="empty-state" style="display:none">
+          <div class="icon"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg></div>
+          <h4>Métriques non disponibles</h4>
+          <p>Exécutez <code>python ai-engine/train_xgboost_and_export.py</code> pour générer <code>data/ml_metrics.json</code>.</p>
+        </div>
+
+        <div id="ml-content" style="display:none">
+          <!-- Comparison -->
+          <div class="ml-compare-grid">
+            <div id="card-rf" class="model-card">
+              <h4>
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                Random Forest
+              </h4>
+              <div class="model-sub">Scikit-learn · 300 estimators · 15 features</div>
+              <div class="metric-row"><span class="lbl">Accuracy</span><span class="val" id="rf-acc">—</span></div>
+              <div class="metric-row"><span class="lbl">Precision</span><span class="val" id="rf-prec">—</span></div>
+              <div class="metric-row"><span class="lbl">Recall</span><span class="val" id="rf-rec">—</span></div>
+              <div class="metric-row"><span class="lbl">F1-Score</span><span class="val" id="rf-f1">—</span></div>
+              <div class="metric-row"><span class="lbl">ROC AUC</span><span class="val" id="rf-auc">—</span></div>
+              <div class="metric-row"><span class="lbl">Temps d'entraînement</span><span class="val" id="rf-time">—</span></div>
+            </div>
+            <div id="card-xgb" class="model-card">
+              <h4>
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                XGBoost
+              </h4>
+              <div class="model-sub">Gradient Boosting · 300 estimators · max depth 8</div>
+              <div class="metric-row"><span class="lbl">Accuracy</span><span class="val" id="xgb-acc">—</span></div>
+              <div class="metric-row"><span class="lbl">Precision</span><span class="val" id="xgb-prec">—</span></div>
+              <div class="metric-row"><span class="lbl">Recall</span><span class="val" id="xgb-rec">—</span></div>
+              <div class="metric-row"><span class="lbl">F1-Score</span><span class="val" id="xgb-f1">—</span></div>
+              <div class="metric-row"><span class="lbl">ROC AUC</span><span class="val" id="xgb-auc">—</span></div>
+              <div class="metric-row"><span class="lbl">Temps d'entraînement</span><span class="val" id="xgb-time">—</span></div>
+            </div>
+          </div>
+
+          <!-- Comparison chart -->
+          <div class="panel" style="margin-bottom:16px">
+            <div class="panel-header"><div><h3>Comparaison visuelle des métriques</h3><div class="sub">Plus c'est haut, mieux c'est</div></div></div>
+            <div class="panel-body"><div style="height:280px"><canvas id="chart-compare"></canvas></div></div>
+          </div>
+
+          <!-- Feature importance -->
+          <div class="grid-2">
+            <div class="panel">
+              <div class="panel-header"><div><h3>Importance des features — RF</h3><div class="sub">Top variables qui influencent la prédiction</div></div></div>
+              <div class="panel-body"><div id="fi-rf" class="fi-list"></div></div>
+            </div>
+            <div class="panel">
+              <div class="panel-header"><div><h3>Importance des features — XGB</h3><div class="sub">Top variables qui influencent la prédiction</div></div></div>
+              <div class="panel-body"><div id="fi-xgb" class="fi-list"></div></div>
+            </div>
+          </div>
+
+          <!-- Confusion matrices -->
+          <div class="grid-2" style="margin-top:16px">
+            <div class="panel">
+              <div class="panel-header"><div><h3>Matrice de confusion — RF</h3><div class="sub">Évaluation sur 20 000 lignes de test</div></div></div>
+              <div class="panel-body"><div id="cm-rf"></div></div>
+            </div>
+            <div class="panel">
+              <div class="panel-header"><div><h3>Matrice de confusion — XGB</h3><div class="sub">Évaluation sur 20 000 lignes de test</div></div></div>
+              <div class="panel-body"><div id="cm-xgb"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── Grafana (admin) ─── -->
+      <div id="page-grafana" class="page">
+        <div class="page-header">
+          <h2>Dashboards Grafana</h2>
+          <p class="lede">Visualisations natives Grafana intégrées dans la plateforme — auto-provisionné.</p>
+        </div>
+        <div class="panel">
+          <div class="panel-header">
+            <div><h3>Datacenter — Live Metrics</h3><div class="sub">Auto-refresh 5s · Source InfluxDB</div></div>
+            <div style="display:flex;gap:8px">
+              <a href="http://localhost:3000/d/dc-live/datacenter-live-metrics?orgId=1" target="_blank" style="padding:6px 12px;border:1px solid var(--brand);color:var(--brand);border-radius:6px;font-size:12px;font-weight:600;text-decoration:none">Ouvrir dans Grafana ↗</a>
+            </div>
+          </div>
+          <div class="panel-body" style="padding:0;position:relative">
+            <div id="grafana-fallback" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:var(--slate-500);font-size:13px;background:#fff;z-index:1">
+              <div class="ring" style="width:32px;height:32px;border:3px solid var(--slate-200);border-top-color:var(--brand);border-radius:50%;animation:spin .8s linear infinite"></div>
+              <div>Chargement du dashboard Grafana…</div>
+              <a href="http://localhost:3000" target="_blank" style="font-size:12px;color:var(--brand);text-decoration:none">Si le panneau reste vide, ouvrir Grafana directement ↗</a>
+            </div>
+            <iframe src="http://localhost:3000/d/dc-live/datacenter-live-metrics?orgId=1&kiosk&refresh=5s&theme=light" style="width:100%;height:780px;border:none;position:relative;z-index:2" onload="setTimeout(()=>{const f=document.getElementById('grafana-fallback');if(f)f.style.display='none'},500)"></iframe>
+          </div>
+        </div>
+      </div>
+
     </div>
-
   </div>
+</div>
 
-  <!-- Sensor Cards -->
-  <div class="card-title" style="margin-bottom:16px">🔬 Analyse Détaillée par Capteur</div>
-  <div id="sensors-grid">
-    <div id="empty-state">
-      <div class="big-icon">🤖</div>
-      <p>Lancez une prévision pour voir l'analyse par capteur</p>
-    </div>
-  </div>
-
-</main>
+<div id="toast-container" class="toast-container"></div>
 
 <script>
-let riskChart = null;
-let lastData = null;
-let chatOpen = true;
-
-// ── Causes probables par capteur ──────────────────────────────────────────────
-const CAUSES = {
-  pwr_consumption: {
-    normal:   "Consommation dans les normes. Aucune anomalie détectée.",
-    warning:  "Surcharge partielle probable sur les baies actives. Vérifiez la distribution de charge.",
-    critical: "Surcharge critique détectée. Risque de coupure ou de dommage matériel immédiat."
-  },
-  fuel_level: {
-    normal:   "Niveau de carburant stable. Générateur opérationnel.",
-    warning:  "Cause : Fuite mineure ou consommation inhabituelle du générateur 2.",
-    critical: "Réservoir critique — démarrez le ravitaillement immédiatement."
-  },
-  battery_health: {
-    normal:   "Batterie en bon état. Autonomie nominale assurée.",
-    warning:  "Dégradation progressive des cellules. Planifiez une maintenance préventive.",
-    critical: "Batterie défaillante. L'UPS ne pourra pas assurer la continuité en cas de coupure."
-  },
-  humidity: {
-    normal:   "Taux d'humidité optimal pour les équipements actifs.",
-    warning:  "Humidité élevée — risque de condensation sur les composants sensibles.",
-    critical: "Humidité critique. Arrêt immédiat du système de refroidissement recommandé."
-  },
-  temp_ext: {
-    normal:   "Température extérieure dans la plage acceptable.",
-    warning:  "Température en hausse — le système de climatisation est sollicité anormalement.",
-    critical: "Surchauffe extérieure critique. Le datacenter ne peut plus maintenir sa température interne."
-  },
-  rack1_h: {
-    normal:   "Zone haute du Rack 1 : température nominale.",
-    warning:  "Accumulation de chaleur en haut du Rack 1 — vérifiez la ventilation verticale.",
-    critical: "Surchauffe critique en haut du Rack 1. Risque de shutdown thermique imminent."
-  },
-  rack1_m: { normal:"Rack 1 milieu : OK.", warning:"Échauffement anormal au milieu du Rack 1.", critical:"Température critique au milieu du Rack 1." },
-  rack1_b: { normal:"Rack 1 bas : OK.", warning:"Faible ventilation en bas du Rack 1.", critical:"Température critique en bas du Rack 1." },
-  rack2_h: { normal:"Rack 2 haut : OK.", warning:"Accumulation de chaleur en haut du Rack 2.", critical:"Surchauffe Rack 2 — Cluster B affecté." },
-  rack2_m: { normal:"Rack 2 milieu : OK.", warning:"Échauffement anormal au milieu du Rack 2.", critical:"Température critique milieu Rack 2." },
-  rack2_b: { normal:"Rack 2 bas : OK.", warning:"Faible ventilation en bas du Rack 2.", critical:"Température critique bas Rack 2." },
+// ─────────── State ───────────
+const state = {
+  user: null,
+  datasets: [],
+  currentDatasetId: null,
+  currentPage: 'monitoring',
+  prediction: null,
+  forecast: null,
+  forecastHorizon: 24,
+  forecastModel: 'timesfm',
+  charts: {},
+  alerts: [],
 };
 
-// ── Tooltips contextuels pour la courbe ───────────────────────────────────────
-const SPIKE_TOOLTIPS = {
-  high:   ["Hausse : Surcharge thermique détectée sur le cluster B", "Pic : Consommation anormale — vérifiez les racks", "Alerte : Température critique prévue dans les 5 prochaines minutes"],
-  medium: ["Fluctuation : Humidité instable en salle serveur", "Montée : Générateur 2 en surcharge légère"],
+const MODEL_DESCRIPTIONS = {
+  timesfm: '<strong>TimesFM</strong> — foundation model Google (200M params)',
+  rf:      '<strong>Random Forest</strong> — extrapolation par arbres de décision',
+  xgb:     '<strong>XGBoost</strong> — gradient boosting avec momentum',
+};
+const MODEL_COLORS = {
+  timesfm: '#0066cc',
+  rf:      '#10b981',
+  xgb:     '#f59e0b',
 };
 
-function getSpikeTip(val) {
-  if (val >= 70) return SPIKE_TOOLTIPS.high[Math.floor(Math.random()*3)];
-  if (val >= 40) return SPIKE_TOOLTIPS.medium[Math.floor(Math.random()*2)];
-  return null;
+const ICON_FOR_SENSOR = {
+  temp_ext: '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 3v12.764a4 4 0 106 0V3a3 3 0 10-6 0z"/></svg>',
+  humidity: '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v0c-3.5 4-6 7.5-6 11a6 6 0 0012 0c0-3.5-2.5-7-6-11z"/></svg>',
+  pwr_consumption: '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>',
+  fuel_level: '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h12v18H3zM15 8h4a2 2 0 012 2v8a2 2 0 01-2 2"/></svg>',
+  battery_health: '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="7" width="15" height="10" rx="1.5"/><path d="M21 10v4" stroke-linecap="round"/></svg>',
+  rack1_h: '<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="1.5"/><path d="M8 8h8M8 12h8M8 16h8" stroke-linecap="round"/></svg>',
+};
+ICON_FOR_SENSOR.rack1_m = ICON_FOR_SENSOR.rack1_b = ICON_FOR_SENSOR.rack2_h = ICON_FOR_SENSOR.rack2_m = ICON_FOR_SENSOR.rack2_b = ICON_FOR_SENSOR.rack1_h;
+
+// ─────────── Auth ───────────
+function showApp(){document.getElementById('login-screen').style.display='none';document.getElementById('app-shell').classList.add('active')}
+function showLogin(){document.getElementById('login-screen').style.display='flex';document.getElementById('app-shell').classList.remove('active');document.body.classList.remove('role-admin');document.getElementById('username').value='';document.getElementById('password').value=''}
+
+async function handleLogin(){
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value;
+  const err = document.getElementById('login-error');
+  err.classList.remove('show');
+  try{
+    const r = await fetch('/api/login',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({username,password})
+    });
+    if(!r.ok) throw new Error('Identifiants incorrects');
+    const data = await r.json();
+    state.user = data;
+    document.getElementById('user-name').textContent = data.name;
+    document.getElementById('user-role').textContent = data.role==='admin'?'Administrateur':'Opérateur';
+    document.getElementById('user-avatar').textContent = (data.name||'U')[0].toUpperCase();
+    document.body.classList.toggle('role-admin', data.role==='admin');
+    showApp();
+    await bootstrap();
+  }catch(e){
+    err.textContent = 'Identifiants incorrects. Essayez admin/admin ou user/user.';
+    err.classList.add('show');
+  }
+}
+function handleLogout(){
+  state.user=null;
+  state.currentPage='monitoring';
+  showLogin();
 }
 
-// ── Données simulées DC2 / DC3 ────────────────────────────────────────────────
-function simulateDcData(dc) {
-  const base = dc === '2' ? 35 : 15;
-  const status = dc === '2' ? 'ALERTE' : 'NORMAL';
-  return {
-    predicted_at: new Date().toISOString().replace('T',' ').slice(0,19),
-    global_risk_percent: base + Math.random()*15,
-    status,
-    horizon_minutes: 32,
-    risk_timeline: Array.from({length:32}, () => base + Math.random()*30),
-    sensors: [
-      {id:'temp_ext',   label:'Température Extérieure', unit:'°C',  icon:'🌡️', current_value:22+Math.random()*8, predicted_value:24+Math.random()*8, delta:1.5, risk_contribution:15, danger_level:'normal'},
-      {id:'humidity',   label:'Humidité',               unit:'%',   icon:'💧', current_value:55+Math.random()*10, predicted_value:58+Math.random()*10, delta:1.2, risk_contribution:10, danger_level:'normal'},
-      {id:'pwr_consumption', label:'Consommation Énergie', unit:'kW', icon:'⚡', current_value:50+Math.random()*20, predicted_value:55+Math.random()*20, delta:3.1, risk_contribution:20, danger_level: dc==='2'?'warning':'normal'},
-      {id:'fuel_level', label:'Niveau Carburant', unit:'%', icon:'⛽', current_value:60+Math.random()*20, predicted_value:59+Math.random()*20, delta:-0.5, risk_contribution:12, danger_level:'normal'},
-      {id:'battery_health', label:'Santé Batterie', unit:'%', icon:'🔋', current_value:85+Math.random()*10, predicted_value:84+Math.random()*10, delta:-0.3, risk_contribution:8, danger_level:'normal'},
-      {id:'rack1_h', label:'Rack 1 – Haut', unit:'°C', icon:'🖥️', current_value:25+Math.random()*8, predicted_value:27+Math.random()*8, delta:0.8, risk_contribution:9, danger_level:'normal'},
-      {id:'rack1_m', label:'Rack 1 – Milieu', unit:'°C', icon:'🖥️', current_value:24+Math.random()*8, predicted_value:25+Math.random()*8, delta:0.5, risk_contribution:7, danger_level:'normal'},
-      {id:'rack1_b', label:'Rack 1 – Bas', unit:'°C', icon:'🖥️', current_value:23+Math.random()*8, predicted_value:24+Math.random()*8, delta:0.4, risk_contribution:5, danger_level:'normal'},
-      {id:'rack2_h', label:'Rack 2 – Haut', unit:'°C', icon:'🖥️', current_value:26+Math.random()*8, predicted_value:28+Math.random()*8, delta:0.9, risk_contribution:6, danger_level: dc==='2'?'warning':'normal'},
-      {id:'rack2_m', label:'Rack 2 – Milieu', unit:'°C', icon:'🖥️', current_value:24+Math.random()*8, predicted_value:25+Math.random()*8, delta:0.3, risk_contribution:5, danger_level:'normal'},
-      {id:'rack2_b', label:'Rack 2 – Bas', unit:'°C', icon:'🖥️', current_value:23+Math.random()*8, predicted_value:24+Math.random()*8, delta:0.2, risk_contribution:3, danger_level:'normal'},
-    ]
-  };
+function quickLogin(u, p){
+  document.getElementById('username').value = u;
+  document.getElementById('password').value = p;
+  handleLogin();
 }
 
-// ── Rendu ─────────────────────────────────────────────────────────────────────
-function initChart(labels, data) {
-  const ctx = document.getElementById('risk-chart').getContext('2d');
-  if (riskChart) riskChart.destroy();
-  const gradient = ctx.createLinearGradient(0, 0, 0, 280);
-  gradient.addColorStop(0, 'rgba(79,142,247,0.35)');
-  gradient.addColorStop(1, 'rgba(79,142,247,0)');
+// ─────────── Navigation ───────────
+const PAGE_META = {
+  monitoring:{title:'Monitoring temps réel',sub:'Indicateurs et statut global du datacenter'},
+  forecast:{title:'Prévisions',sub:'Projections IA des capteurs critiques'},
+  alerts:{title:'Alertes',sub:'Toutes les anomalies détectées'},
+  ml:{title:'Modèles ML',sub:'Comparatif Random Forest vs XGBoost'},
+  grafana:{title:'Dashboards Grafana',sub:'Visualisations natives Grafana'},
+};
+function switchPage(page){
+  if((page==='ml'||page==='grafana') && state.user?.role!=='admin') return;
+  state.currentPage = page;
+  document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active',b.dataset.page===page));
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  const m = PAGE_META[page];
+  document.getElementById('page-title').textContent = m.title;
+  document.getElementById('page-sub').textContent = m.sub;
+  loadPageData(page);
+}
 
-  // Trouver le point le plus haut pour le tooltip contextuel
-  const maxIdx = data.indexOf(Math.max(...data));
+function refreshCurrentPage(){loadPageData(state.currentPage,true)}
 
-  riskChart = new Chart(ctx, {
-    type: 'line',
-    data: { labels, datasets: [{
-      label: 'Risque de Panne (%)', data, fill: true,
-      backgroundColor: gradient, borderColor: '#4f8ef7',
-      borderWidth: 2.5, tension: 0.4,
-      pointRadius: data.map((v,i) => i===maxIdx ? 7 : 3),
-      pointBackgroundColor: data.map((v,i) => i===maxIdx ? '#ef4444' : '#4f8ef7'),
-      pointHoverRadius: 7,
-    }]},
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      interaction: { mode: 'index', intersect: false },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: '#1e293b', borderColor: '#334155', borderWidth: 1,
-          titleColor: '#94a3b8', bodyColor: '#e2e8f0',
-          callbacks: {
-            label: c => ` ${c.parsed.y.toFixed(1)}%`,
-            afterLabel: c => {
-              const tip = getSpikeTip(c.parsed.y);
-              return tip ? `\n  ⚠️ ${tip}` : null;
-            }
-          }
-        }
+// ─────────── Bootstrap ───────────
+async function bootstrap(){
+  try{
+    const r = await fetch('/api/datasets');
+    const ds = await r.json();
+    state.datasets = Array.isArray(ds)?ds:[];
+  }catch(e){state.datasets=[]}
+
+  if(state.datasets.length===0){
+    state.datasets=[{id:'1',name:'Datacenter principal',type:'ai',filename:null}];
+  }
+
+  const picker = document.getElementById('dataset-picker');
+  picker.innerHTML = state.datasets.map(d=>`<option value="${d.id}">${d.name}</option>`).join('');
+  state.currentDatasetId = state.datasets[0].id;
+  picker.value = state.currentDatasetId;
+
+  switchPage('monitoring');
+}
+
+function onDatasetChange(){
+  state.currentDatasetId = document.getElementById('dataset-picker').value;
+  loadPageData(state.currentPage,true);
+}
+
+// ─────────── Page loaders ───────────
+async function loadPageData(page,force=false){
+  if(page==='monitoring') await loadMonitoring(force);
+  if(page==='forecast')   await loadForecast(force);
+  if(page==='alerts')     await loadAlerts(force);
+  if(page==='ml')         await loadML(force);
+}
+
+async function loadMonitoring(force){
+  const loader = document.getElementById('mon-loader');
+  const content = document.getElementById('mon-content');
+  loader.style.display='flex';content.style.display='none';
+  try{
+    const r = await fetch(`/api/dataset/${state.currentDatasetId}`);
+    if(!r.ok) throw new Error('API error');
+    const data = await r.json();
+    state.prediction = data;
+    renderMonitoring(data);
+    updateAlertBadge(data);
+    loader.style.display='none';content.style.display='block';
+  }catch(e){
+    loader.innerHTML = `<div class="empty-state"><h4>Erreur de chargement</h4><p>${e.message}</p></div>`;
+  }
+}
+
+function renderMonitoring(data){
+  // Met à jour le sous-titre avec le modèle utilisé et l'horizon de prévision
+  const lede = document.getElementById('mon-lede');
+  if(lede){
+    const modelTxt = data.model_used || 'Modèle statistique pondéré';
+    const horizon = data.horizon_minutes || 32;
+    lede.innerHTML = `Analyse <strong>${modelTxt}</strong> sur le datacenter sélectionné — prévision à <strong>${horizon} minutes</strong> dans le futur.`;
+  }
+
+  animateNumber('kpi-risk', data.global_risk_percent, 1);
+  const power = data.sensors.find(s=>s.id==='pwr_consumption');
+  if(power){
+    animateNumber('kpi-power', power.predicted_value, 1);
+    const d = power.delta;
+    const dEl = document.getElementById('kpi-power-delta');
+    dEl.className = 'kpi-delta '+(d>0.1?'up':d<-0.1?'down':'flat');
+    dEl.innerHTML = (d>0.1?'▲':d<-0.1?'▼':'→')+' '+Math.abs(d).toFixed(1)+' kW prévu';
+  }
+  const activeSensors = data.sensors.filter(s=>!s.is_binary).length;
+  document.getElementById('kpi-sensors').textContent = activeSensors;
+  const alertCount = data.sensors.filter(s=>s.danger_level==='critical'||s.danger_level==='warning').length;
+  document.getElementById('kpi-alerts').textContent = alertCount;
+  document.getElementById('kpi-alerts-sub').textContent = alertCount===0?'— Aucune anomalie':alertCount+' capteur(s) en alerte';
+
+  const dEl = document.getElementById('kpi-risk-delta');
+  const last3 = data.risk_timeline.slice(-4);
+  const trend = last3[last3.length-1] - last3[0];
+  dEl.className = 'kpi-delta '+(trend>1?'up':trend<-1?'down':'flat');
+  dEl.innerHTML = (trend>1?'▲':trend<-1?'▼':'→')+' '+Math.abs(trend).toFixed(1)+'% sur les 4 dernières min';
+
+  const banner = document.getElementById('status-banner');
+  banner.className = 'status-banner';
+  if(data.status==='CRITIQUE') banner.classList.add('critical');
+  else if(data.status==='ALERTE') banner.classList.add('warning');
+  document.getElementById('banner-risk').textContent = data.global_risk_percent.toFixed(1);
+  document.getElementById('banner-pill').textContent = data.status;
+  document.getElementById('banner-time').textContent = data.predicted_at;
+
+  const tl = document.getElementById('status-timeline');
+  tl.innerHTML = '';
+  data.risk_timeline.forEach(v=>{
+    const bar = document.createElement('div');
+    bar.className = 'timeline-bar'+(v>=70?' high':v>=40?' med':'');
+    bar.style.height = Math.max(v,3)+'%';
+    tl.appendChild(bar);
+  });
+
+  const grid = document.getElementById('sensor-grid');
+  const sensors = data.sensors.filter(s=>!s.is_binary || s.current_value>0);
+  grid.innerHTML = sensors.map(s=>renderSensorCard(s)).join('');
+  setTimeout(()=>document.querySelectorAll('.sensor-bar-fill').forEach(b=>{b.style.width=b.dataset.w}),50);
+
+  renderRiskExplanation(data);
+}
+
+function renderRiskExplanation(data){
+  const panel = document.getElementById('risk-explanation');
+  const exp = data.risk_explanation;
+  if(!exp){panel.style.display='none';return}
+  panel.style.display='block';
+  panel.className = 'risk-explanation '+(data.status==='CRITIQUE'?'critical':data.status==='ALERTE'?'warning':'normal');
+  document.getElementById('re-narrative').innerHTML = exp.narrative || '';
+
+  const cont = document.getElementById('re-contributors');
+  if(!exp.top_contributors || !exp.top_contributors.length){cont.innerHTML='';return}
+  cont.innerHTML = exp.top_contributors.map(c=>{
+    const dCls = c.delta>0.5?'up':c.delta<-0.5?'down':'flat';
+    const dArr = c.delta>0.5?'▲':c.delta<-0.5?'▼':'→';
+    const cur = (c.current_value!=null?Number(c.current_value).toFixed(1):'—');
+    const pred = (c.predicted_value!=null?Number(c.predicted_value).toFixed(1):'—');
+    const delta = Math.abs(c.delta||0).toFixed(1);
+    return `
+      <div class="re-contrib-chip">
+        <span class="cn">${c.label}</span>
+        <span class="cv">${cur} ${c.unit||''} → ${pred}</span>
+        <span class="cd ${dCls}">${dArr} ${delta} ${c.unit||''}</span>
+        <span class="pct">Contribution : ${c.contribution_percent}%</span>
+      </div>`;
+  }).join('');
+}
+
+function renderSensorCard(s){
+  const cls = s.danger_level==='critical'?'critical':s.danger_level==='warning'?'warning':'';
+  const ico = ICON_FOR_SENSOR[s.id] || ICON_FOR_SENSOR.rack1_h;
+  const cur = (s.current_value!=null?Number(s.current_value):0);
+  const pred = (s.predicted_value!=null?Number(s.predicted_value):0);
+  const d = (s.delta!=null?Number(s.delta):0);
+  const deltaTxt = d>0?'▲ +'+d.toFixed(1):d<0?'▼ '+d.toFixed(1):'→ 0.0';
+  const deltaCls = d>0?'up':d<0?'down':'flat';
+  const insight = s.ai_insight || (s.danger_level==='critical' ? 'IA: Anomalie critique détectée. Action recommandée.' :
+                                  s.danger_level==='warning'  ? 'IA: Déviation des seuils nominaux.' :
+                                                                 'IA: Valeurs stables et conformes.');
+  return `
+    <div class="sensor-card ${cls}">
+      <div class="sensor-head">
+        <div class="sensor-title">
+          <div class="sensor-icon">${ico}</div>
+          <span>${s.label}</span>
+        </div>
+        <div class="sensor-impact">${s.risk_contribution}%</div>
+      </div>
+      <div class="sensor-values">
+        <div class="sensor-now">
+          <span class="lbl">Actuel</span>
+          <span class="val">${cur.toFixed(1)}<span class="u">${s.unit||''}</span></span>
+        </div>
+        <div class="sensor-pred">
+          <span class="lbl">Prévu (IA)</span>
+          <span class="val">${pred.toFixed(1)}</span>
+          <span class="sensor-delta ${deltaCls}">${deltaTxt}</span>
+        </div>
+      </div>
+      <div class="sensor-bar"><div class="sensor-bar-fill" data-w="${Math.min(s.risk_contribution*5,100)}%"></div></div>
+      <div class="sensor-insight">${insight}</div>
+    </div>`;
+}
+
+function animateNumber(id, target, decimals=0){
+  const el = document.getElementById(id);
+  if(!el) return;
+  const start = parseFloat(el.textContent.replace(/[^0-9.-]/g,''))||0;
+  const t0 = performance.now();
+  const dur = 600;
+  function step(t){
+    const p = Math.min((t-t0)/dur,1);
+    const eased = 1-Math.pow(1-p,3);
+    const v = start + (target-start)*eased;
+    el.textContent = decimals>0?v.toFixed(decimals):Math.round(v);
+    if(p<1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+// ─────────── Forecast ───────────
+async function loadForecast(force){
+  const loader = document.getElementById('forecast-loader');
+  const content = document.getElementById('forecast-content');
+  loader.style.display='flex';content.style.display='none';
+  try{
+    const r = await fetch(`/api/forecast/${state.currentDatasetId}?horizon=${state.forecastHorizon}&model=${state.forecastModel}`);
+    if(!r.ok) throw new Error('Forecast unavailable');
+    const data = await r.json();
+    state.forecast = data;
+    renderForecast(data);
+    document.getElementById('model-info-card').innerHTML = MODEL_DESCRIPTIONS[state.forecastModel] || '';
+    loader.style.display='none';content.style.display='block';
+  }catch(e){
+    loader.innerHTML = `<div class="empty-state"><h4>Erreur</h4><p>${e.message}</p></div>`;
+  }
+}
+
+function changeHorizon(h){
+  state.forecastHorizon = h;
+  document.querySelectorAll('.forecast-tab[data-horizon]').forEach(t=>t.classList.toggle('active',Number(t.dataset.horizon)===h));
+  loadForecast(true);
+}
+
+function changeModel(m){
+  state.forecastModel = m;
+  document.querySelectorAll('.forecast-tab[data-model]').forEach(t=>t.classList.toggle('active',t.dataset.model===m));
+  loadForecast(true);
+}
+
+function renderForecast(data){
+  const color = MODEL_COLORS[state.forecastModel] || '#0066cc';
+  drawForecastChart('chart-temp', data.series.temp_ext, '#dc2626', color, 'Température (°C)');
+  drawForecastChart('chart-power', data.series.pwr_consumption, '#0066cc', color, 'Consommation (kW)');
+  drawForecastChart('chart-humidity', data.series.humidity, '#06b6d4', color, 'Humidité (%)');
+  drawForecastChart('chart-fuel', data.series.fuel_level, '#10b981', color, 'Carburant (%)');
+}
+
+function drawForecastChart(canvasId, series, histColor, fcColor, label){
+  if(!series) return;
+  const ctx = document.getElementById(canvasId);
+  if(!ctx) return;
+  if(state.charts[canvasId]){state.charts[canvasId].destroy()}
+  const histLen = series.history.length;
+  const fcLen = series.forecast.length;
+  const labels = [];
+  for(let i=-histLen;i<0;i++) labels.push(i+'m');
+  labels.push('Now');
+  for(let i=1;i<fcLen;i++) labels.push('+'+i+'m');
+  const histData = [...series.history, ...new Array(fcLen-1).fill(null)];
+  const fcData = [...new Array(histLen-1).fill(null), series.history[histLen-1], ...series.forecast.slice(1)];
+  const modelName = ({timesfm:'TimesFM', rf:'Random Forest', xgb:'XGBoost'})[state.forecastModel] || 'IA';
+
+  state.charts[canvasId] = new Chart(ctx,{
+    type:'line',
+    data:{
+      labels,
+      datasets:[
+        {label:'Historique', data:histData, borderColor:histColor, backgroundColor:histColor+'15', fill:true, tension:0.35, pointRadius:0, borderWidth:2},
+        {label:`Prédit (${modelName})`, data:fcData, borderColor:fcColor, borderDash:[6,4], fill:false, tension:0.35, pointRadius:0, borderWidth:2.5},
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{display:true,position:'top',labels:{font:{size:11,family:'Inter',weight:'600'},boxWidth:12,padding:12}},
+        tooltip:{mode:'index',intersect:false,backgroundColor:'#0a1628',titleFont:{family:'Inter',size:12},bodyFont:{family:'Inter',size:11}}
       },
-      scales: {
-        x: { grid:{color:'rgba(255,255,255,.05)'}, ticks:{color:'#64748b',font:{size:10}} },
-        y: { min:0, max:100, grid:{color:'rgba(255,255,255,.05)'}, ticks:{color:'#64748b',font:{size:10},callback:v=>v+'%'} }
+      scales:{
+        x:{ticks:{font:{family:'JetBrains Mono',size:10},color:'#94a3b8',maxRotation:0,autoSkipPadding:18},grid:{display:false}},
+        y:{ticks:{font:{family:'JetBrains Mono',size:10},color:'#94a3b8'},grid:{color:'#f1f5f9'}}
       }
     }
   });
 }
 
-function updateGauge(pct) {
-  const arc = document.getElementById('gauge-arc');
-  const offset = 402 - (pct/100)*402;
-  arc.style.strokeDashoffset = offset;
-  const color = pct>=70?'#ef4444':pct>=40?'#f59e0b':'#10b981';
-  arc.style.stroke = color;
-  document.getElementById('gauge-pct').textContent = pct.toFixed(1)+'%';
-  document.getElementById('gauge-pct').style.color = color;
+// ─────────── Alerts (vue globale multi-datacenter) ───────────
+async function loadAlerts(force){
+  try{
+    const r = await fetch('/api/alerts/all');
+    const data = await r.json();
+    state.alerts = data.alerts || [];
+    document.getElementById('stat-dc').textContent      = data.datacenters_count || 0;
+    document.getElementById('stat-total').textContent   = data.total || 0;
+    document.getElementById('stat-critical').textContent= data.critical || 0;
+    document.getElementById('stat-warning').textContent = data.warning || 0;
+    renderAlerts(state.alerts);
+    updateAlertBadgeCount(data.total || 0);
+  }catch(e){renderAlerts([])}
 }
 
-function sensorCardHTML(s) {
-  const dClass = s.danger_level;
-  const deltaSign = s.delta > 0 ? '+' : '';
-  const deltaClass = s.delta > 0.1 ? 'delta-up' : s.delta < -0.1 ? 'delta-down' : 'delta-flat';
-  const badgeClass = `badge-${dClass}`;
-  const badgeText = dClass==='normal'?'Normal':dClass==='warning'?'Alerte':'Critique';
-  const barW = Math.min(s.risk_contribution * 3, 100);
-  const cause = (CAUSES[s.id] || {})[dClass] || '';
-  const showCause = cause && (dClass !== 'normal' || ['pwr_consumption','fuel_level','battery_health','humidity'].includes(s.id));
-
-  return `
-  <div class="sensor-card ${dClass}">
-    <div class="sensor-top">
-      <div class="sensor-icon-label">
-        <div class="sensor-icon">${s.icon}</div>
-        <div><div class="sensor-name">${s.label}</div><div class="sensor-id">${s.id}</div></div>
+function renderAlerts(alerts){
+  const list = document.getElementById('alerts-list');
+  const sub = document.getElementById('alerts-sub');
+  if(!alerts.length){
+    list.innerHTML = `<div class="empty-state"><div class="icon"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg></div><h4>Aucune alerte active</h4><p>Tous les datacenters fonctionnent dans les seuils normaux.</p></div>`;
+    sub.textContent = 'Aucune anomalie détectée sur le parc';
+    return;
+  }
+  const critCount = alerts.filter(a=>a.severity==='critical').length;
+  sub.textContent = `${alerts.length} alerte(s) sur le parc — ${critCount} critique(s) — triées par sévérité`;
+  list.innerHTML = alerts.map(a=>`
+    <div class="alert-item ${a.severity}">
+      <div class="alert-icon-wrap">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
       </div>
-      <span class="sensor-badge ${badgeClass}">${badgeText}</span>
-    </div>
-    <div class="sensor-values">
-      <div class="val-block">
-        <div class="val-label">Valeur actuelle</div>
-        <div><span class="val-number">${s.current_value}</span><span class="val-unit">${s.unit}</span></div>
-      </div>
-      <div class="val-block">
-        <div class="val-label">Prévision +30 min</div>
-        <div><span class="val-number">${s.predicted_value}</span><span class="val-unit">${s.unit}</span></div>
-        <div class="val-delta ${deltaClass}">${deltaSign}${s.delta.toFixed(2)} ${s.unit}</div>
+      <div class="alert-body">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <div class="alert-title">${a.title}</div>
+          <span class="dc-badge"><span class="dc-dot"></span>${a.datacenter_name || 'Datacenter'}</span>
+        </div>
+        <div class="alert-msg">${a.message}</div>
+        ${a.category ? `<span class="alert-category">${a.category}</span>` : ''}
+        <div class="alert-time">${a.time}</div>
       </div>
     </div>
-    <div class="risk-bar-wrap">
-      <div class="risk-bar-label"><span>Contribution au risque</span><span>${s.risk_contribution}%</span></div>
-      <div class="risk-bar-track"><div class="risk-bar-fill" style="width:${barW}%"></div></div>
-    </div>
-    ${showCause ? `<div class="cause-box"><div class="cause-label">Cause Probable</div><div class="cause-text">${cause}</div></div>` : ''}
-  </div>`;
+  `).join('');
 }
 
-function renderData(data) {
-  lastData = data;
-  const banner = document.getElementById('status-banner');
-  banner.className = data.status;
-  document.getElementById('status-label').textContent =
-    data.status==='NORMAL' ? '✅ Système Normal' :
-    data.status==='ALERTE' ? '⚠️ Alerte Détectée' : '🚨 État Critique';
-  document.getElementById('status-time').textContent =
-    `Analyse effectuée le ${data.predicted_at} — Horizon : ${data.horizon_minutes} min`;
-  document.getElementById('global-risk-pct').textContent = data.global_risk_percent.toFixed(1) + '%';
-  updateGauge(data.global_risk_percent);
-  const labels = data.risk_timeline.map((_,i)=>`+${i+1} min`);
-  initChart(labels, data.risk_timeline);
-  document.getElementById('sensors-grid').innerHTML = data.sensors.map(sensorCardHTML).join('');
+function updateAlertBadge(prediction){
+  if(!prediction) return;
+  const n = prediction.sensors.filter(s=>s.danger_level==='critical'||s.danger_level==='warning').length;
+  updateAlertBadgeCount(n);
+}
+function updateAlertBadgeCount(n){
+  const b = document.getElementById('alert-badge');
+  b.textContent = n;
+  b.classList.toggle('zero', n===0);
 }
 
-// ── Datacenter change ─────────────────────────────────────────────────────────
-function onDcChange() {
-  const dc = document.getElementById('dc-select').value;
-  if (dc === '1') return; // Ne rien faire, DC1 requiert l'analyse réelle
-  const data = simulateDcData(dc);
-  renderData(data);
-}
-
-// ── Toast Notifications ───────────────────────────────────────────────────────
-function showToast(title, body) {
-  const c = document.getElementById('toast-container');
-  const t = document.createElement('div');
-  t.className = 'toast';
-  t.innerHTML = `
-    <div class="toast-icon">🚨</div>
-    <div><div class="toast-title">${title}</div><div class="toast-body">${body}</div></div>
-    <button class="toast-close" onclick="this.parentElement.remove()">✕</button>`;
-  c.appendChild(t);
-  setTimeout(() => t.remove(), 8000);
-}
-
-// ── Chatbot ───────────────────────────────────────────────────────────────────
-const CHAT_KB = {
-  'carburant':    "Le niveau de carburant bas peut indiquer une fuite ou une consommation excessive du générateur. Vérifiez le générateur 2 en priorité.",
-  'batterie':     "Une batterie dégradée réduit l'autonomie de l'UPS. Planifiez un remplacement préventif si la santé est sous 60%.",
-  'température':  "La hausse de température est souvent causée par un dysfonctionnement de la climatisation ou une surcharge des racks.",
-  'humidité':     "Un taux d'humidité élevé peut provoquer de la condensation sur les composants. Vérifiez les systèmes de déshumidification.",
-  'rack':         "Les anomalies sur les racks indiquent souvent un mauvais flux d'air. Vérifiez les obturations de baies et les ventilateurs.",
-  'énergie':      "Une consommation anormale peut signaler des équipements en surcharge ou des failles électriques.",
-  'panne':        "Les pannes probables dans 30 min sont calculées par l'IA en combinant TimesFM (prédiction des capteurs) et votre modèle Random Forest.",
-  'alerte':       "Une alerte signifie que le risque de panne est entre 40% et 70%. Une surveillance renforcée est recommandée.",
-  'critique':     "Un état critique (>70%) nécessite une intervention immédiate. Vérifiez les capteurs marqués en rouge.",
-};
-function sendChat() {
-  const input = document.getElementById('chat-input');
-  const msg = input.value.trim();
-  if (!msg) return;
-  const msgs = document.getElementById('chat-messages');
-  msgs.innerHTML += `<div class="msg-user">${msg}</div>`;
-  input.value = '';
-  const key = Object.keys(CHAT_KB).find(k => msg.toLowerCase().includes(k));
-  const reply = key ? CHAT_KB[key] : "Je n'ai pas de réponse précise pour cela. Consultez les cartes capteurs pour plus de détails sur les capteurs en alerte.";
-  setTimeout(() => {
-    msgs.innerHTML += `<div class="msg-bot">${reply}</div>`;
-    msgs.scrollTop = msgs.scrollHeight;
-  }, 600);
-  msgs.scrollTop = msgs.scrollHeight;
-}
-function toggleChat() {
-  chatOpen = !chatOpen;
-  document.getElementById('chatbot-panel').style.display = chatOpen ? 'block' : 'none';
-}
-
-// ── Fetch réel DC1 ────────────────────────────────────────────────────────────
-async function fetchPrediction() {
-  const dc = document.getElementById('dc-select').value;
-  if (dc !== '1') { onDcChange(); return; }
-  const btn = document.getElementById('btn-refresh');
-  const overlay = document.getElementById('loading-overlay');
-  btn.disabled = true;
-  document.getElementById('btn-icon').innerHTML = '<span class="spin">⟳</span>';
-  overlay.classList.add('active');
-  try {
-    const res = await fetch('/api/predict');
-    if (!res.ok) throw new Error(`Erreur serveur: ${res.status}`);
-    const data = await res.json();
-    renderData(data);
-  } catch (err) {
-    alert('Erreur : ' + err.message);
-  } finally {
-    overlay.classList.remove('active');
-    btn.disabled = false;
-    document.getElementById('btn-icon').textContent = '⚡';
+// ─────────── ML Dashboard ───────────
+async function loadML(force){
+  if(state.user?.role!=='admin') return;
+  const loader = document.getElementById('ml-loader');
+  const content = document.getElementById('ml-content');
+  const empty = document.getElementById('ml-empty');
+  loader.style.display='flex';content.style.display='none';empty.style.display='none';
+  try{
+    const r = await fetch('/api/ml/metrics');
+    if(r.status===404){loader.style.display='none';empty.style.display='block';return}
+    const data = await r.json();
+    renderML(data);
+    loader.style.display='none';content.style.display='block';
+  }catch(e){
+    loader.style.display='none';empty.style.display='block';
   }
 }
 
-// ── Toast automatique au chargement ──────────────────────────────────────────
-setTimeout(() => showToast(
-  'ALERTE URGENTE : Datacenter 3 – Surchauffe Critique',
-  'Température rack B dépasse 45°C. Intervention requise immédiatement.'
-), 2500);
-</script>
+function renderML(data){
+  const rf = data.models.random_forest;
+  const xgb = data.models.xgboost;
 
+  document.getElementById('card-rf').classList.toggle('best', data.best_model==='Random Forest');
+  document.getElementById('card-xgb').classList.toggle('best', data.best_model==='XGBoost');
+
+  const fmt = (v,d=4)=>v!=null?Number(v).toFixed(d):'—';
+  document.getElementById('rf-acc').textContent = fmt(rf.accuracy);
+  document.getElementById('rf-prec').textContent = fmt(rf.precision);
+  document.getElementById('rf-rec').textContent = fmt(rf.recall);
+  document.getElementById('rf-f1').textContent = fmt(rf.f1);
+  document.getElementById('rf-auc').textContent = fmt(rf.roc_auc);
+  document.getElementById('rf-time').textContent = rf.training_seconds+' s';
+
+  document.getElementById('xgb-acc').textContent = fmt(xgb.accuracy);
+  document.getElementById('xgb-prec').textContent = fmt(xgb.precision);
+  document.getElementById('xgb-rec').textContent = fmt(xgb.recall);
+  document.getElementById('xgb-f1').textContent = fmt(xgb.f1);
+  document.getElementById('xgb-auc').textContent = fmt(xgb.roc_auc);
+  document.getElementById('xgb-time').textContent = xgb.training_seconds+' s';
+
+  const ctx = document.getElementById('chart-compare');
+  if(state.charts['chart-compare']) state.charts['chart-compare'].destroy();
+  state.charts['chart-compare'] = new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels:['Accuracy','Precision','Recall','F1-Score','ROC AUC'],
+      datasets:[
+        {label:'Random Forest', data:[rf.accuracy,rf.precision,rf.recall,rf.f1,rf.roc_auc], backgroundColor:'#0066cc', borderRadius:6, barPercentage:0.6},
+        {label:'XGBoost',       data:[xgb.accuracy,xgb.precision,xgb.recall,xgb.f1,xgb.roc_auc], backgroundColor:'#10b981', borderRadius:6, barPercentage:0.6},
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'top',labels:{font:{size:11,family:'Inter',weight:'600'}}}},
+      scales:{
+        y:{min:0,max:1,ticks:{font:{family:'JetBrains Mono',size:10},color:'#94a3b8'},grid:{color:'#f1f5f9'}},
+        x:{ticks:{font:{family:'Inter',size:11,weight:'600'},color:'#475569'},grid:{display:false}}
+      }
+    }
+  });
+
+  renderFI('fi-rf', rf.feature_importance);
+  renderFI('fi-xgb', xgb.feature_importance);
+
+  renderCM('cm-rf', rf.confusion_matrix);
+  renderCM('cm-xgb', xgb.confusion_matrix);
+}
+
+function renderFI(elId, importances){
+  const top = importances.slice(0,10);
+  const max = Math.max(...top.map(f=>f.importance),0.001);
+  document.getElementById(elId).innerHTML = top.map(f=>`
+    <div class="fi-row">
+      <div class="name">${f.label}</div>
+      <div class="bar"><div class="bar-fill" style="width:${(f.importance/max*100).toFixed(1)}%"></div></div>
+      <div class="v">${(f.importance*100).toFixed(2)}%</div>
+    </div>
+  `).join('');
+}
+
+function renderCM(elId, cm){
+  if(!cm || cm.length<2){document.getElementById(elId).innerHTML='<p style="color:var(--slate-500)">Données non disponibles</p>';return}
+  const tn = cm[0][0], fp = cm[0][1], fn = cm[1][0], tp = cm[1][1];
+  document.getElementById(elId).innerHTML = `
+    <table class="cm-table">
+      <tr><td class="corner"></td><td class="corner">Prédit Normal</td><td class="corner">Prédit Panne</td></tr>
+      <tr><td class="corner">Réel Normal</td><td class="tn">${tn}<div style="font-size:10px;font-weight:600;color:#065f46;margin-top:4px;font-family:Inter">Vrai Négatif</div></td><td class="fp">${fp}<div style="font-size:10px;font-weight:600;color:#991b1b;margin-top:4px;font-family:Inter">Faux Positif</div></td></tr>
+      <tr><td class="corner">Réel Panne</td><td class="fn">${fn}<div style="font-size:10px;font-weight:600;color:#991b1b;margin-top:4px;font-family:Inter">Faux Négatif</div></td><td class="tp">${tp}<div style="font-size:10px;font-weight:600;color:#065f46;margin-top:4px;font-family:Inter">Vrai Positif</div></td></tr>
+    </table>
+  `;
+}
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter' && document.getElementById('login-screen').style.display!=='none') handleLogin();
+});
+</script>
+</body>
+</html>
