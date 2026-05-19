@@ -4,8 +4,12 @@ from fastapi.middleware.cors import CORSMiddleware
 import os
 import json
 import shutil
+import threading
+import time
 import pandas as pd
+import requests
 from datetime import datetime, timedelta
+
 
 app = FastAPI(title="DataCenter AI Monitor — Nouvameq")
 
@@ -432,6 +436,57 @@ async def get_ml_metrics():
 
 
 # ─── Alerts ───────────────────────────────────────────────────────────────────
+# Cache de déduplication des notifications email (clé → timestamp dernier envoi)
+_ALERT_NOTIFICATION_CACHE: dict = {}
+_ALERT_NOTIFICATION_CACHE_LOCK = threading.Lock()
+ALERT_NOTIFICATION_TTL_SECONDS = int(os.environ.get("ALERT_NOTIFICATION_TTL_SECONDS", "1800"))
+ALERT_DEFAULT_EMAIL = os.environ.get("ALERT_DEFAULT_EMAIL", "safouaine.zouaoui@esen.tn")
+ALERT_AUTO_NOTIFY_ENABLED = os.environ.get("ALERT_AUTO_NOTIFY", "1") == "1"
+
+
+def _should_notify(key: str) -> bool:
+    """Retourne True si l'alerte n'a pas déjà été envoyée dans la dernière fenêtre TTL."""
+    now = time.time()
+    with _ALERT_NOTIFICATION_CACHE_LOCK:
+        last = _ALERT_NOTIFICATION_CACHE.get(key, 0)
+        if now - last < ALERT_NOTIFICATION_TTL_SECONDS:
+            return False
+        _ALERT_NOTIFICATION_CACHE[key] = now
+        # Purge des entrées expirées pour éviter de remplir la mémoire
+        expired = [k for k, t in _ALERT_NOTIFICATION_CACHE.items()
+                   if now - t > ALERT_NOTIFICATION_TTL_SECONDS * 2]
+        for k in expired:
+            _ALERT_NOTIFICATION_CACHE.pop(k, None)
+    return True
+
+
+def _dispatch_alert_notification_async(alert: dict, destinataire: str) -> None:
+    """Envoie l'alerte vers n8n dans un thread séparé (non bloquant)."""
+    def _send():
+        envoyer_alerte_n8n(
+            titre=alert["title"],
+            message=alert["message"],
+            gravite=alert["severity"],
+            email_client=destinataire,
+        )
+    threading.Thread(target=_send, daemon=True).start()
+
+
+def _maybe_notify(alert: dict) -> None:
+    """Pousse l'alerte vers n8n si :
+       - le mode auto est activé
+       - la sévérité est `critical`
+       - cette alerte n'a pas déjà été notifiée dans les ALERT_NOTIFICATION_TTL_SECONDS dernières secondes
+    """
+    if not ALERT_AUTO_NOTIFY_ENABLED:
+        return
+    if alert.get("severity") != "critical":
+        return
+    key = f"{alert.get('datacenter_id')}|{alert.get('category')}|{alert.get('severity')}"
+    if _should_notify(key):
+        _dispatch_alert_notification_async(alert, ALERT_DEFAULT_EMAIL)
+
+
 def _alerts_for_dataset(dataset_id: str, dataset_name: str) -> list:
     """Compute alerts for one dataset, tagging each with the datacenter name."""
     try:
@@ -456,13 +511,15 @@ def _alerts_for_dataset(dataset_id: str, dataset_name: str) -> list:
     base = {"datacenter_id": dataset_id, "datacenter_name": dataset_name, "time": now}
 
     if prediction["status"] == "CRITIQUE":
-        alerts.append({
+        a = {
             **base,
             "severity": "critical",
             "category": "Risque global",
             "title": f"{dataset_name} — Risque global critique",
             "message": f"Indice de risque à {prediction['global_risk_percent']}%. Intervention immédiate requise.",
-        })
+        }
+        alerts.append(a)
+        _maybe_notify(a)
     elif prediction["status"] == "ALERTE":
         alerts.append({
             **base,
@@ -474,13 +531,15 @@ def _alerts_for_dataset(dataset_id: str, dataset_name: str) -> list:
 
     for s in prediction["sensors"]:
         if s["danger_level"] == "critical":
-            alerts.append({
+            a = {
                 **base,
                 "severity": "critical",
                 "category": s["label"],
                 "title": f"{dataset_name} — Capteur critique : {s['label']}",
                 "message": f"Valeur {s['current_value']} {s.get('unit','')}. Contribution au risque : {s['risk_contribution']}%.",
-            })
+            }
+            alerts.append(a)
+            _maybe_notify(a)
         elif s["danger_level"] == "warning":
             alerts.append({
                 **base,
@@ -534,6 +593,72 @@ async def get_alerts(dataset_id: str):
         return {"alerts": [], "total": 0}
     alerts = _alerts_for_dataset(dataset_id, dataset["name"])
     return {"alerts": alerts, "total": len(alerts)}
+
+
+# ─── Notifications email via n8n (webhook Cloud) ──────────────────────────────
+N8N_WEBHOOK_URL = os.environ.get(
+    "N8N_WEBHOOK_URL",
+    "https://safouaine.app.n8n.cloud/webhook-test/alerte-pfe",
+)
+
+_SEVERITY_TO_NIVEAU = {
+    "critical": "Haute",
+    "warning":  "Basse",
+    "info":     "Basse",
+    "haute":    "Haute",
+    "basse":    "Basse",
+}
+
+
+def envoyer_alerte_n8n(titre: str, message: str, gravite: str, email_client: str) -> dict:
+    """Push une alerte vers le workflow n8n Cloud qui expédiera le mail.
+
+    `gravite` accepte "Haute"/"Basse" ou les codes internes "critical"/"warning".
+    """
+    niveau = _SEVERITY_TO_NIVEAU.get((gravite or "basse").lower(), "Basse")
+
+    payload = {
+        "titre":        titre,
+        "details":      message,
+        "niveau":       niveau,
+        "destinataire": email_client,
+        "source":       "pfe-monitoring-platform",
+        "timestamp":    datetime.now().isoformat(timespec="seconds"),
+    }
+
+    try:
+        response = requests.post(N8N_WEBHOOK_URL, json=payload, timeout=8)
+        ok = 200 <= response.status_code < 300
+        print(f"[n8n] {response.status_code} — {titre} → {email_client}")
+        return {"ok": ok, "status_code": response.status_code, "payload": payload}
+    except requests.RequestException as e:
+        print(f"[n8n] Erreur d'envoi : {e}")
+        return {"ok": False, "error": str(e), "payload": payload}
+
+
+@app.post("/api/alerts/notify")
+async def notify_alert(payload: dict = Body(...)):
+    """Déclenche l'envoi d'une alerte par email via n8n.
+
+    Body attendu :
+      { "titre": str, "message": str, "gravite": "Haute"|"Basse"|"critical"|"warning",
+        "email": str }
+    """
+    titre   = (payload.get("titre")   or "").strip()
+    message = (payload.get("message") or "").strip()
+    gravite = (payload.get("gravite") or "Basse").strip()
+    email   = (payload.get("email")   or "").strip()
+
+    if not titre or not message or not email:
+        raise HTTPException(status_code=400, detail="titre, message et email sont requis")
+
+    result = envoyer_alerte_n8n(titre, message, gravite, email)
+    if not result["ok"]:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Échec n8n : {result.get('error') or result.get('status_code')}",
+        )
+    return {"success": True, "sent_to": email, "niveau": result["payload"]["niveau"]}
 
 
 # ─── Settings ─────────────────────────────────────────────────────────────────
