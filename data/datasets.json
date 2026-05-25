@@ -1,5 +1,5 @@
 [
-  {"id": "1", "name": "Datacenter Nouvameq — IA Hybride", "type": "ai", "filename": null},
-  {"id": "2", "name": "Datacenter 2 — Mode Normal", "type": "csv", "filename": "dataset_normal_1.csv"},
-  {"id": "3", "name": "Datacenter 3 — Mode Normal", "type": "csv", "filename": "dataset_normal_2.csv"}
+  {"id": "1", "name": "Datacenter A", "type": "ai", "filename": null},
+  {"id": "2", "name": "Datacenter B", "type": "csv", "filename": "dataset_normal_1.csv"},
+  {"id": "3", "name": "Datacenter C", "type": "csv", "filename": "dataset_normal_2.csv"}
 ]
